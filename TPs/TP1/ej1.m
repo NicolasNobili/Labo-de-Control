@@ -13,7 +13,7 @@ optionss.PhaseMatchingFreq=1;
 optionss.Grid='on';
 
 %Constantes:
-g = 9.8;
+G = 9.8;
 
 a_max = 0.4;
 h_max = 0.9;
@@ -23,36 +23,104 @@ Q_i = 8e-3/60;
 
 m = (a_max - b)/h_max;
 
+%%
+%{
++==========================================
++
++                Ejercicio c
++                (Simbolico)
++==========================================
+%}
+
 % Equilibrio
 x_e = 0.45;
-u_e = Q_i/(pi * d^2 * sqrt(2*g*x_e)/4);
+u_e = Q_i/(pi * d^2 * sqrt(2*G*x_e)/4);
 
 orden = 1;
 x=sym('x',[orden 1],'real');
 u=sym('u','real');
 
 
-f = (Q_i - pi * d^2 * sqrt(2*g*x)*u/4 )/(m^2 * x^2 + 2*b*m*x + b^2);
+% Funcion de estado
+f = (Q_i - pi * d^2 * sqrt(2*G*x)*u/4 )/(m^2 * x^2 + 2*b*m*x + b^2);
+
+% Funcion de salida
 g = x;
 
-A = jacobian(f,x);
-A = double(subs(A,{x,u},{x_e,u_e}));
+% Linealizacion 
+As = jacobian(f,x);
+Bs = jacobian(f,u);
+Cs = jacobian(g,x);
+Ds = jacobian(g,u);
 
-B = jacobian(f,u);
-B = double(subs(B,{x,u},{x_e,u_e}));
 
-C = jacobian(g,x);
-C = double(subs(C,{x,u},{x_e,u_e}));
+%{
++==========================================
++
++                Ejercicio c
++                (Numerico)
++==========================================
+%}
 
-D = jacobian(g,u);
-D = double(subs(D,{x,u},{x_e,u_e}));
-
-% Trasnferencia de la Planta Linealizada
-P = tf(ss(A,B,C,D));
+An = -((2*b*m + 2*m^2 *x_e)*(Q_i - (pi*d^2*u_e*sqrt(G*x_e))/(2*sqrt(2))))/(b^2 + 2*b*m*x_e+m^2*x_e^2)^2 - (pi*d^2*G*u_e)/(4*sqrt(2*G*x_e*(b^2+2*b*m*x_e+m^2*x_e^2)));
+Bn = - ((1/4)*(pi*d^2)*sqrt(2*G*x_e))/(b+m*x_e)^2;
+Cn = 1;
+Dn = 0;
 
 %%
+%{
++==========================================
++
++                Ejercicio d
++                (Simbolico)
++==========================================
+%}
+
+% Trasnferencia de la Planta Linealizada
+
+A = double(subs(As,{x,u},{x_e,u_e}));
+B = double(subs(Bs,{x,u},{x_e,u_e}));
+C = double(subs(Cs,{x,u},{x_e,u_e}));
+D = double(subs(Ds,{x,u},{x_e,u_e}));
+Ps = tf(ss(A,B,C,D));
+
+%{
++==========================================
++
++                Ejercicio d
++                (Simbolico)
++==========================================
+%}
+
+% Trasnferencia de la Planta Linealizada
+
+Pn = Cn*Bn/(s-An);
 
 
+%%
+%{
++==========================================
++
++                Ejercicio e
++
++==========================================
+%}
+x_e = (0.1:0.1:0.8);
+u_e = Q_i./(pi * d^2 * sqrt(2*G*x_e)/4);
 
+legends = {}; % Inicializa una celda para almacenar las leyendas
 
+figure();hold on
+for i=1:length(x_e)
+    A = double(subs(As,{x,u},{x_e(i),u_e(i)}));
+    B = double(subs(Bs,{x,u},{x_e(i),u_e(i)}));
+    C = double(subs(Cs,{x,u},{x_e(i),u_e(i)}));
+    D = double(subs(Ds,{x,u},{x_e(i),u_e(i)}));
+    P = tf(ss(A,B,C,D));
+    bodeplot(P)
+    legends{end+1} = ['x_e = ' num2str(x_e(i))]; % Almacena la leyenda correspondiente
+end
+ax = findall(gcf,'type','axes');
+legend(ax(2),legends);
+legend(ax(3),legends);
 %%
