@@ -12,6 +12,17 @@ optionss.PhaseMatchingValue=-180;
 optionss.PhaseMatchingFreq=1;
 optionss.Grid='on';
 
+%%
+%{
++====================================================================
++====================================================================
++
++                           PARTE 1
++
++====================================================================
++====================================================================
+%}
+
 %Constantes:
 G = 9.8;
 
@@ -105,22 +116,70 @@ Pn = Cn*Bn/(s-An);
 +
 +==========================================
 %}
-x_e = (0.1:0.1:0.8);
-u_e = Q_i./(pi * d^2 * sqrt(2*G*x_e)/4);
+x_e_bode = (0.1:0.1:0.8);
+u_e_bode = Q_i./(pi * d^2 * sqrt(2*G*x_e_bode)/4);
 
 legends = {}; % Inicializa una celda para almacenar las leyendas
 
 figure();hold on
-for i=1:length(x_e)
-    A = double(subs(As,{x,u},{x_e(i),u_e(i)}));
-    B = double(subs(Bs,{x,u},{x_e(i),u_e(i)}));
-    C = double(subs(Cs,{x,u},{x_e(i),u_e(i)}));
-    D = double(subs(Ds,{x,u},{x_e(i),u_e(i)}));
-    P = tf(ss(A,B,C,D));
-    bodeplot(P)
-    legends{end+1} = ['x_e = ' num2str(x_e(i))]; % Almacena la leyenda correspondiente
+for i=1:length(x_e_bode)
+    A = double(subs(As,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    B = double(subs(Bs,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    C = double(subs(Cs,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    D = double(subs(Ds,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    P_bode = tf(ss(A,B,C,D));
+    bodeplot(P_bode)
+    
+    legends{end+1} = ['x_e = ' num2str(x_e_bode(i))]; % Almacena la leyenda correspondiente
 end
 ax = findall(gcf,'type','axes');
 legend(ax(2),legends);
 legend(ax(3),legends);
 %%
+
+%{
++====================================================================
++====================================================================
++
++                           PARTE 2
++
++====================================================================
++====================================================================
+%}
+
+
+%{
++==========================================
++
++                Ejercicio a
++                (Simbolico)
++==========================================
+%}
+x_e = 0.45;
+u_e = Q_i/(pi * d^2 * sqrt(2*G*x_e)/4);
+
+A_sim = double(subs(As,{x,u},{x_e,u_e}));
+B_sim = double(subs(Bs,{x,u},{x_e,u_e}));
+C_sim = double(subs(Cs,{x,u},{x_e,u_e}));
+D_sim = double(subs(Ds,{x,u},{x_e,u_e}));
+
+%%
+%{
++==========================================
++
++                Ejercicio b
++                
++==========================================
+%}
+
+P = Ps;
+%figure(); hold on
+%bode(P);
+
+figure(); hold on
+P_monio = -P/s;
+margin(P_monio);
+
+k= db2mag(-61.1);
+C_monio = k;
+margin(C_monio*P_monio);
