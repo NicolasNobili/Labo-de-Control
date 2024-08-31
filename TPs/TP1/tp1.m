@@ -28,6 +28,7 @@ G = 9.8;
 
 a_max = 0.4;
 h_max = 0.9;
+h_e = 0.45;
 b = 0.1;
 d = 0.01065;
 Q_i = 8e-3/60;
@@ -156,6 +157,7 @@ legend(ax(3),legends);
 +==========================================
 %}
 x_e = 0.45;
+h_e = 0.45;
 u_e = Q_i/(pi * d^2 * sqrt(2*G*x_e)/4);
 
 A_sim = double(subs(As,{x,u},{x_e,u_e}));
@@ -171,15 +173,98 @@ D_sim = double(subs(Ds,{x,u},{x_e,u_e}));
 +                
 +==========================================
 %}
+close all
 
 P = Ps;
 %figure(); hold on
 %bode(P);
 
 figure(); hold on
+legends = {'P_{monio}','L','Red Adelanto'};
+
 P_monio = -P/s;
 margin(P_monio);
 
-k= db2mag(-61.1);
-C_monio = k;
+k= db2mag(-0.26+8);
+%C_monio = k * (s+0.005/8)/(s+0.005*8);
+C_monio = k*(s+0.00237);
+red = (s+0.007/10)/(s+0.007*10);
 margin(C_monio*P_monio);
+%bode(red);
+legend(legends)
+
+C = -C_monio/s;
+
+L = P*C;
+S = 1/(1 + L);
+T = 1-S;
+Su = T/P;
+
+% Bode T
+
+figure(); hold on
+
+subplot(2,1,1); hold on
+legends = {'T','P'};
+bode(T);
+bode(P);
+title('Bode T y P')
+legend(legends)
+
+subplot(2,1,2); hold on
+bode(Su);
+legends = {'Su'};
+title('Bode Su')
+
+% Respuesta al escalon
+opts = stepDataOptions('StepAmplitude',-0.1);
+
+figure(); hold on
+title('Respuesta T (-0.1)');
+[y, t] = step(T,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y + x_e);
+
+figure(); hold on
+title('Respuesta Su (-0.1)');
+[y, t] = step(Su,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+figure(); hold on
+title('Respuesta S (-0.1)');
+[y, t] = step(S,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y);
+
+
+% Respuesta al escalon
+opts = stepDataOptions('StepAmplitude',0.1);
+
+figure(); hold on
+title('Respuesta T (0.1)');
+[y, t] = step(T,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y + x_e);
+
+figure(); hold on
+title('Respuesta Su (0.1)');
+[y, t] = step(Su,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+
+figure(); hold on
+title('Respuesta S (0.1)');
+[y, t] = step(S,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y);
+
+
+
