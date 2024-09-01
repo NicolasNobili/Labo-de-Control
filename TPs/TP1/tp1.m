@@ -100,7 +100,7 @@ Ps = tf(ss(A,B,C,D));
 +==========================================
 +
 +                Ejercicio d
-+                (Simbolico)
++                (Numerico)
 +==========================================
 %}
 
@@ -173,11 +173,9 @@ D_sim = double(subs(Ds,{x,u},{x_e,u_e}));
 +                
 +==========================================
 %}
-close all
 
+% Se define la planta P 
 P = Ps;
-%figure(); hold on
-%bode(P);
 
 figure(); hold on
 legends = {'P_{monio}','L','Red Adelanto'};
@@ -186,22 +184,21 @@ P_monio = -P/s;
 margin(P_monio);
 
 k= db2mag(-0.26+8);
-%C_monio = k * (s+0.005/8)/(s+0.005*8);
 C_monio = k*(s+0.00237);
-red = (s+0.007/10)/(s+0.007*10);
 margin(C_monio*P_monio);
-%bode(red);
 legend(legends)
 
+% Controlador Final
 C = -C_monio/s;
 
+% Cerrando el lazo...
 L = P*C;
 S = 1/(1 + L);
 T = 1-S;
 Su = T/P;
+Si = T/C;
 
-% Bode T
-
+% Bode T y P
 figure(); hold on
 
 subplot(2,1,1); hold on
@@ -211,60 +208,91 @@ bode(P);
 title('Bode T y P')
 legend(legends)
 
+% Bode Su
 subplot(2,1,2); hold on
 bode(Su);
 legends = {'Su'};
 title('Bode Su')
 
-% Respuesta al escalon
+% Respuesta al escalon para dh=-0.1
+time = (0:0.01:40*60);
 opts = stepDataOptions('StepAmplitude',-0.1);
 
 figure(); hold on
+
+subplot(2,2,1); hold on
+grid on;
 title('Respuesta T (-0.1)');
-[y, t] = step(T,opts);
+[y, t] = step(T,time,opts);
 t=t/60;
 xline(8,'--r','ts');
 plot(t,y + x_e);
 
-figure(); hold on
-title('Respuesta Su (-0.1)');
-[y, t] = step(Su,opts);
-t=t/60;
-xline(8,'--r','ts');
-plot(t,y+u_e);
 
-figure(); hold on
+subplot(2,2,2); hold on
+grid on;
 title('Respuesta S (-0.1)');
-[y, t] = step(S,opts);
+[y, t] = step(S,time,opts);
 t=t/60;
 xline(8,'--r','ts');
 plot(t,y);
 
 
-% Respuesta al escalon
+subplot(2,2,3); hold on
+grid on;
+title('Respuesta Su (-0.1)');
+[y, t] = step(Su,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+
+subplot(2,2,4); hold on
+grid on;
+title('Respuesta Si (-0.1)');
+[y, t] = step(Si,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+
+% Respuestas al escalon para dh=0.1
 opts = stepDataOptions('StepAmplitude',0.1);
 
 figure(); hold on
+
+subplot(2,2,1); hold on
+grid on;
 title('Respuesta T (0.1)');
-[y, t] = step(T,opts);
+[y, t] = step(T,time,opts);
 t=t/60;
 xline(8,'--r','ts');
 plot(t,y + x_e);
 
-figure(); hold on
+subplot(2,2,2); hold on
+grid on;
+title('Respuesta S (0.1)');
+[y, t] = step(S,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+subplot(2,2,3); hold on
+grid on;
 title('Respuesta Su (0.1)');
-[y, t] = step(Su,opts);
+[y, t] = step(Su,time,opts);
 t=t/60;
 xline(8,'--r','ts');
 plot(t,y+u_e);
 
 
-figure(); hold on
-title('Respuesta S (0.1)');
-[y, t] = step(S,opts);
+subplot(2,2,4); hold on
+grid on;
+title('Respuesta Si (0.1)');
+[y, t] = step(Si,time,opts);
 t=t/60;
 xline(8,'--r','ts');
-plot(t,y);
+plot(t,y+u_e);
 
 
 
