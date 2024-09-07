@@ -90,3 +90,5 @@ void matlab_send7(float dato1, float dato2, float dato3,float dato4, float dato5
   
   //etc con mas datos tipo float. Tambien podría pasarse como parámetro a esta funcion un array de floats.
 }
+
+

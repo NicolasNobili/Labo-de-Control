@@ -38,7 +38,7 @@ void loop()
 }
 
 
-unsigned int leer_angulo_pote(int pin){
+unsigned int leer_angulo_potenciometro(int pin){
   // Se lee el valor de tension del potenciometro entre 0V y 5V
   int potValue = analogRead(pin);
   // Se tranforma la lectura en un angulo
