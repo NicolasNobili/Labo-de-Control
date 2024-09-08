@@ -74,7 +74,7 @@ Ds = jacobian(g,u);
 +==========================================
 %}
 
-An = -((2*b*m + 2*m^2 *x_e)*(Q_i - (pi*d^2*u_e*sqrt(G*x_e))/(2*sqrt(2))))/(b^2 + 2*b*m*x_e+m^2*x_e^2)^2 - (pi*d^2*G*u_e)/(4*sqrt(2*G*x_e*(b^2+2*b*m*x_e+m^2*x_e^2)));
+An = - (pi*d^2*G*u_e)/(4*sqrt(2*G*x_e)*(b+m*x_e)^2);
 Bn = - ((1/4)*(pi*d^2)*sqrt(2*G*x_e))/(b+m*x_e)^2;
 Cn = 1;
 Dn = 0;
@@ -181,7 +181,7 @@ figure(); hold on
 legends = {'P_{monio}','L','Red Adelanto'};
 
 P_monio = -P/s;
-margin(P_monio);
+bode(P_monio);
 
 k= db2mag(-0.26+8);
 C_monio = k*(s+0.00237);
