@@ -30,6 +30,9 @@
 // MACROS SENSORES
 const int potPin = A0; // PIN POTENCIOMETRO
 
+// CONTROLADOR
+#define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
+
 //================================================================================
 //
 //                                   SETUP
@@ -59,7 +62,12 @@ void setup() {
 //================================================================================
 
 void loop() {
+  // Se toma el tiempo de inicio de ejecucion de la rutina de control
+  unsigned long startTime = micros();
 
+  // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
+  elapsedTime = micros() - startTime;
+  delayMicroseconds(CTRL_PERIOD - elapsedTime);
 }
 
 
