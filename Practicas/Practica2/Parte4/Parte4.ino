@@ -81,6 +81,10 @@ void setup() {
 //
 //================================================================================
 float theta_g = 0;
+float theta_f = 0;
+int esPrimeraMedicion = 1;
+float alpha = 0.03;
+
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
   unsigned long startTime = micros();
@@ -88,13 +92,14 @@ void loop() {
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
-  
 
-  theta_g = theta_g + 0.01 * g.gyro.x;
+  theta_g = theta_f + 0.01 * g.gyro.x;
   float theta_a = atan2(a.acceleration.y,a.acceleration.z);
-  float data[2] = {theta_g,theta_a};
+  theta_f = theta_g *(1-alpha) + theta_a * alpha;
+  
+  float data[3] = {90*theta_g,90*theta_a,90*theta_f};
 
-  serial_sendN(data,2);
+  serial_sendN(data,3);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   unsigned int elapsedTime = micros() - startTime;
