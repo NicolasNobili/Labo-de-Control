@@ -35,6 +35,12 @@ void setup() {
 
 int contadorData = 10;
 float elapsedTime = 0;
+float theta_0 = 0;
+float theta = theta_0;
+int esPrimeraMedicion = 0;
+float theta3 = 0;
+float alpha = 0.5;
+float theta2 = 0;
 void loop() {
   
   unsigned long startTime = micros();
@@ -42,15 +48,28 @@ void loop() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  if(contadorData == 0){
-    //matlab_send6(a.acceleration.x,a.acceleration.y,a.acceleration.z,g.gyro.x,g.gyro.y,g.gyro.z);
-    matlab_send7(a.acceleration.x,a.acceleration.y,a.acceleration.z,g.gyro.x,g.gyro.y,g.gyro.z,elapsedTime);
-    contadorData = SCALER_DATA;
+  
+  if (esPrimeraMedicion == 0){
+    theta = theta_0 + g.gyro.x * 0.01;
+    esPrimeraMedicion = 0;
   }
- 
+  else{
+    theta += theta3 + g.gyro.x * 0.01;
+  }
+  
+  theta2 = atan2(a.acceleration.y,a.acceleration.z);
+  
+  theta3 = theta *(1-alpha) + theta*alpha;
+  float data_send[3]={theta , theta2, theta3};
+  serial_sendN(data_send,3);
+
+  
+
   elapsedTime = micros() - startTime;
   delayMicroseconds(10000- elapsedTime);
 }
+
+
 
 
 void matlab_send6(float dato1, float dato2, float dato3,float dato4, float dato5, float dato6){
@@ -92,3 +111,14 @@ void matlab_send7(float dato1, float dato2, float dato3,float dato4, float dato5
 }
 
 
+void serial_sendN(float datos[], int N) {
+  /*
+  Envía N floats a través del puerto serie
+  */
+  Serial.write("abcd");  // Etiqueta o cabecera para indicar inicio de la transmisión
+  
+  for (int i = 0; i < N; i++) {
+    byte * b = (byte *) &datos[i];  // Convierte el float actual en una secuencia de bytes
+    Serial.write(b, 4);  // Envía los 4 bytes que componen el float
+  }
+}

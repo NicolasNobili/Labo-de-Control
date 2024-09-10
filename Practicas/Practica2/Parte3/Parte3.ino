@@ -10,6 +10,7 @@
 #include <Wire.h>
 
 
+
 //================================================================================
 //
 //                           MACROS y CONSTANTES
@@ -19,7 +20,7 @@
 
 // MACROS PWM SERVO
 #define CLK_FREQUENCY 16000000 // f_clock = 16MHz
-#define PWM_PERIOD_US 10000 // T=10ms ^ f=100Hz
+#define PWM_PERIOD_US 20000 // T=10ms ^ f=100Hz
 #define PWM_MAX_TON_US 2500 // Ton_max = 2.5ms
 #define PWM_MIN_TON_US 500 // Ton_min = 0.5ms
 #define TOP_PWM ((unsigned long)(CLK_FREQUENCY / 8) * PWM_PERIOD_US / (2 * 1000000))  // Cálculo del valor TOP para el modo Phase Correct, con un prescaler de 8
@@ -57,6 +58,7 @@ void setup() {
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
 
+  config_servo(500);
 }
 
 
@@ -67,25 +69,32 @@ void setup() {
 //
 //================================================================================
 
+int contadorData = 0;
+
+float elapsedTime = 0;
+
+float theta_o = 0;
+float theta = theta_o;
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
-  unsigned long startTime = micros();
 
+  unsigned long startTime = micros();
+  
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  // Envio de informacion a MATLAB/SIMULINK
-  if(contadorData == 0){
-  // Se envia el tiempo de ejecucion de la iteracion anterior
-  matlab_send7(a.acceleration.x,a.acceleration.y,a.acceleration.z,g.gyro.x,g.gyro.y,g.gyro.z,elapsedTime);
-  contadorData = SCALER_SEND_DATA;
-  }
-  contadorData--;
   
+  theta = theta +  g.gyro.x * CTRL_PERIOD/1000000;
+  float theta2 = atan2(a.acceleration.y,a.acceleration.z);
+
+  float data_send[2]={theta , theta2};
+  serial_sendN(data_send,2);
+
+
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
-  elapsedTime = micros() - startTime;
-  delayMicroseconds(CTRL_PERIOD - elapsedTime);
+  unsigned int elapsedTime = micros() - startTime;
+  delayMicroseconds(CTRL_PERIOD - elapsedTime);  
 }
 
 
@@ -108,7 +117,7 @@ unsigned int leer_angulo_potenciometro(int pin){
   int potValue = analogRead(pin);
   // Se tranforma la lectura en un angulo
   float angulo_pote = potValue * 285/1023;
-  return angulo_pote
+  return angulo_pote;
 }
 
 
