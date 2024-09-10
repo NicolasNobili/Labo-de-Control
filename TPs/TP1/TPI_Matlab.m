@@ -128,7 +128,7 @@ for i=1:length(x_e_bode)
     B = double(subs(Bs,{x,u},{x_e_bode(i),u_e_bode(i)}));
     C = double(subs(Cs,{x,u},{x_e_bode(i),u_e_bode(i)}));
     D = double(subs(Ds,{x,u},{x_e_bode(i),u_e_bode(i)}));
-    P_bode = tf(ss(A,B,C,D));
+    P_bode = tf(ss(A,B,C,D))
     bodeplot(P_bode)
     
     legends{end+1} = ['x_e = ' num2str(x_e_bode(i))]; % Almacena la leyenda correspondiente
@@ -214,7 +214,7 @@ bode(Su);
 legends = {'Su'};
 title('Bode Su')
 
-% Respuesta al escalon para dh=-0.1
+% Respuesta al escalon para dh=-0.1 (Planta Lineal)
 time = (0:0.01:40*60);
 opts = stepDataOptions('StepAmplitude',-0.1);
 
@@ -256,7 +256,7 @@ xline(8,'--r','ts');
 plot(t,y+u_e);
 
 
-% Respuestas al escalon para dh=0.1
+% Respuestas al escalon para dh=0.1 (Planta Lineal)
 opts = stepDataOptions('StepAmplitude',0.1);
 
 figure(); hold on

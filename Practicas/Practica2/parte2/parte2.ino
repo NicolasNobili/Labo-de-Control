@@ -47,7 +47,7 @@ void loop() {
     matlab_send7(a.acceleration.x,a.acceleration.y,a.acceleration.z,g.gyro.x,g.gyro.y,g.gyro.z,elapsedTime);
     contadorData = SCALER_DATA;
   }
- 
+  contadorData--;
   elapsedTime = micros() - startTime;
   delayMicroseconds(10000- elapsedTime);
 }

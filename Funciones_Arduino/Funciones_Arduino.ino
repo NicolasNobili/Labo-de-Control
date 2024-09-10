@@ -4,11 +4,11 @@
 //
 //================================================================================
 
-
 #include <Arduino.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+
 
 //================================================================================
 //
@@ -27,11 +27,17 @@
 #define MIN_OCR1A (TOP_PWM - (TOP_PWM * PWM_MAX_TON_US / PWM_PERIOD_US)) // OCR1A para Ton = 2.5ms
 #define PIN_SERVO 1 // pin PB1 de atmega328p o pin 9 arduino uno/nano
 
-// MACROS SENSORES
+// MACROS/CONSTANTES SENSORES
 const int potPin = A0; // PIN POTENCIOMETRO
 
-// CONTROLADOR
+// MACROS CONTROLADOR
 #define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
+
+// MACROS MATLAB/SIMULINK
+#define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
+
+// messi
+
 
 //================================================================================
 //
@@ -44,13 +50,26 @@ Adafruit_MPU6050 mpu;
 
 void setup() {
 
+  // Configuracion comunicacion serial
   Serial.begin(115200);
 
   // Configuracion IMU
+  // Try to initialize!
+  delay(10); // will pause Zero, Leonardo, etc until serial console opens
+
+  Serial.println("Adafruit MPU6050 test!");
+
+  // Try to initialize!
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
-
+  delay(100);
 }
 
 
@@ -61,14 +80,30 @@ void setup() {
 //
 //================================================================================
 
+int contadorData = 10;
+float elapsedTime = 0;
+
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
   unsigned long startTime = micros();
 
+  // Get new sensor events with the readings 
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  // Envio de informacion a MATLAB/SIMULINK
+  if(contadorData == 0){
+  // Se envia el tiempo de ejecucion de la iteracion anterior
+  matlab_send7(a.acceleration.x,a.acceleration.y,a.acceleration.z,g.gyro.x,g.gyro.y,g.gyro.z,elapsedTime);
+  contadorData = SCALER_SEND_DATA;
+  }
+  contadorData--;
+  
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   elapsedTime = micros() - startTime;
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
 }
+
 
 
 //================================================================================
@@ -89,7 +124,7 @@ unsigned int leer_angulo_potenciometro(int pin){
   int potValue = analogRead(pin);
   // Se tranforma la lectura en un angulo
   float angulo_pote = potValue * 285/1023;
-  return angulo_pote
+  return angulo_pote;
 }
 
 
