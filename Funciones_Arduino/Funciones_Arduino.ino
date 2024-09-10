@@ -22,7 +22,7 @@
 #define PWM_PERIOD_US 10000 // T=10ms ^ f=100Hz
 #define PWM_MAX_TON_US 2500 // Ton_max = 2.5ms
 #define PWM_MIN_TON_US 500 // Ton_min = 0.5ms
-#define TOP_PWM ((unsigned long)(CLK_FREQUENCY / 8) * PWM_PERIOD_US / (2 * 1000000))  // Cálculo del valor TOP para el modo Phase Correct, con un prescaler de 8
+#define TOP_PWM ((unsigned long)(CLK_FREQUENCY / 8) / (2 * 100))  // Cálculo del valor TOP para el modo Phase Correct, con un prescaler de 8
 #define MAX_OCR1A (TOP_PWM - (TOP_PWM * PWM_MIN_TON_US / PWM_PERIOD_US)) // OCR1A para Ton = 0.5ms
 #define MIN_OCR1A (TOP_PWM - (TOP_PWM * PWM_MAX_TON_US / PWM_PERIOD_US)) // OCR1A para Ton = 2.5ms
 #define PIN_SERVO 1 // pin PB1 de atmega328p o pin 9 arduino uno/nano
@@ -49,7 +49,6 @@ const int potPin = A0; // PIN POTENCIOMETRO
 Adafruit_MPU6050 mpu;
 
 void setup() {
-
   // Configuracion comunicacion serial
   Serial.begin(115200);
 
@@ -70,6 +69,7 @@ void setup() {
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
   delay(100);
+  config_servo(1000);
 }
 
 
@@ -91,14 +91,10 @@ void loop() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  // Envio de informacion a MATLAB/SIMULINK
-  if(contadorData == 0){
-  // Se envia el tiempo de ejecucion de la iteracion anterior
-  matlab_send7(a.acceleration.x,a.acceleration.y,a.acceleration.z,g.gyro.x,g.gyro.y,g.gyro.z,elapsedTime);
-  contadorData = SCALER_SEND_DATA;
-  }
-  contadorData--;
-  
+  actualizar_servo(500);
+  delay(1000);
+  actualizar_servo(1500);
+  delay(1000),
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   elapsedTime = micros() - startTime;
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
