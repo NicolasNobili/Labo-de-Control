@@ -1,0 +1,216 @@
+//================================================================================
+//
+//                               BIBLIOTECAS
+//
+//================================================================================
+
+#include <Arduino.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
+
+
+//================================================================================
+//
+//                           MACROS y CONSTANTES
+//
+//================================================================================
+
+
+// MACROS PWM SERVO
+#define CLK_FREQUENCY 16000000 // f_clock = 16MHz
+#define PWM_PERIOD_US 10000 // T=10ms ^ f=100Hz
+#define PWM_MAX_TON_US 2500 // Ton_max = 2.5ms
+#define PWM_MIN_TON_US 500 // Ton_min = 0.5ms
+#define TOP_PWM ((unsigned long)(CLK_FREQUENCY / 8) * PWM_PERIOD_US / (2 * 1000000))  // Cálculo del valor TOP para el modo Phase Correct, con un prescaler de 8
+#define MAX_OCR1A (TOP_PWM - (TOP_PWM * PWM_MIN_TON_US / PWM_PERIOD_US)) // OCR1A para Ton = 0.5ms
+#define MIN_OCR1A (TOP_PWM - (TOP_PWM * PWM_MAX_TON_US / PWM_PERIOD_US)) // OCR1A para Ton = 2.5ms
+#define PIN_SERVO 1 // pin PB1 de atmega328p o pin 9 arduino uno/nano
+
+// MACROS/CONSTANTES SENSORES
+const int potPin = A0; // PIN POTENCIOMETRO
+
+// MACROS CONTROLADOR
+#define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
+
+// MACROS MATLAB/SIMULINK
+#define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
+
+
+
+//================================================================================
+//
+//                                   SETUP
+//
+//================================================================================
+
+// Creo una instancia de IMU MPU6050
+Adafruit_MPU6050 mpu;
+
+void setup() {
+
+  // Configuracion comunicacion serial
+  Serial.begin(115200);
+
+  // Configuracion IMU
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
+
+}
+
+
+
+//================================================================================
+//
+//                                 MAIN LOOP
+//
+//================================================================================
+
+void loop() {
+  // Se toma el tiempo de inicio de ejecucion de la rutina de control
+  unsigned long startTime = micros();
+
+  // Get new sensor events with the readings 
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  // Envio de informacion a MATLAB/SIMULINK
+  if(contadorData == 0){
+  // Se envia el tiempo de ejecucion de la iteracion anterior
+  matlab_send7(a.acceleration.x,a.acceleration.y,a.acceleration.z,g.gyro.x,g.gyro.y,g.gyro.z,elapsedTime);
+  contadorData = SCALER_SEND_DATA;
+  }
+  contadorData--;
+  
+  // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
+  elapsedTime = micros() - startTime;
+  delayMicroseconds(CTRL_PERIOD - elapsedTime);
+}
+
+
+
+//================================================================================
+//
+//                                  FUNCIONES
+//
+//================================================================================
+
+
+//==================================================
+//                    SENSORES
+//==================================================
+
+unsigned int leer_angulo_potenciometro(int pin){
+  /*
+  Se lee el valor de tension del potenciometro entre 0V y 5V
+  */
+  int potValue = analogRead(pin);
+  // Se tranforma la lectura en un angulo
+  float angulo_pote = potValue * 285/1023;
+  return angulo_pote
+}
+
+
+
+//==================================================
+//               FUNCIONES PWM SERVO
+//==================================================
+
+void config_servo(unsigned int t_on0){
+  /* 
+  La funcion configura el Timer 1 para obtener una salida PWM por el pin PIN_SERVO
+  con un periodo de PWM_PERIOD. La misma recive como parametro el tiempo en alto
+  inicial del PWM en microsegundos (debe estar entre 500us y 2500us). 
+  */
+  // Configuro PB1(OC1A) como output (pin 9 arduino uno)
+  DDRB = (1<<PIN_SERVO);
+
+  // Seteo la frecuencia del PWM en 100Hz fijando el valor de ICR1
+  ICR1H = (TOP_PWM >> 8);
+  ICR1L = (TOP_PWM & 0xFF);
+
+  //Set OC1A on compare match when up-counting.
+  //Clear OC1A on compare match when down-counting.
+  //Phase Correct PWM, top en ICR1, prescaler 1/8
+  TCCR1A = (1 << COM1A1) | (1 << COM1A0) | (0 << COM1B1) | (0 << COM1B0) | (1 << WGM11) | (0 << WGM10);
+  TCCR1B = (1 << WGM13) | (0 << WGM12) | (0 << CS12) | (1 << CS11) | (0 << CS10);
+
+  unsigned int ocr1a = map(t_on0, PWM_MIN_TON_US, PWM_MAX_TON_US, MAX_OCR1A, MIN_OCR1A);
+  // Actualizar OCR1AH y OCR1AL
+  OCR1AH = (ocr1a >> 8);
+  OCR1AL = (ocr1a & 0xFF);
+}
+
+
+void actualizar_servo(unsigned int t_on){
+  /*
+  La funcion actualiza el tiempo en alto de la senal PWM del timer 1
+  con un tiempo t_on entre 500us y 2500us 
+  */
+  unsigned int ocr1a = map(t_on, PWM_MIN_TON_US, PWM_MAX_TON_US, MAX_OCR1A, MIN_OCR1A);
+  // Actualizar OCR1AH y OCR1AL
+  OCR1AH = ((ocr1a >> 8) & 0xFF);
+  OCR1AL = (ocr1a & 0xFF);
+}
+
+
+
+//==================================================
+//                 MATLAB/SIMULINK
+//==================================================
+
+void serial_send6(float dato1, float dato2, float dato3,float dato4, float dato5, float dato6){
+  /*
+  Esta funcion envia 6 datos tipo float por puerto serie con el encabezado "abcd".
+  Se utiliza en particular para enviar datos a matlab/simulink en tiempo real
+  */
+  Serial.write("abcd");
+  byte * b = (byte *) &dato1;
+  Serial.write(b,4);
+  b = (byte *) &dato2;
+  Serial.write(b,4);
+  b = (byte *) &dato3;
+  Serial.write(b,4);
+  b = (byte *) &dato4;
+  Serial.write(b,4);
+  b = (byte *) &dato5;
+  Serial.write(b,4);
+  b = (byte *) &dato6;
+  Serial.write(b,4);
+}
+
+
+void serial_send7(float dato1, float dato2, float dato3,float dato4, float dato5, float dato6, float dato7){
+  /*
+  Idem que serial_send6 pero con 7 floats
+  */
+  Serial.write("abcd");
+  byte * b = (byte *) &dato1;
+  Serial.write(b,4);
+  b = (byte *) &dato2;
+  Serial.write(b,4);
+  b = (byte *) &dato3;
+  Serial.write(b,4);
+  b = (byte *) &dato4;
+  Serial.write(b,4);
+  b = (byte *) &dato5;
+  Serial.write(b,4);
+  b = (byte *) &dato6;
+  Serial.write(b,4);
+  b = (byte *) &dato7;
+  Serial.write(b,4);
+}
+
+
+void serial_sendN(float datos[], int N) {
+  /*
+  Envía N floats a través del puerto serie
+  */
+  Serial.write("abcd");  // Etiqueta o cabecera para indicar inicio de la transmisión
+  
+  for (int i = 0; i < N; i++) {
+    byte * b = (byte *) &datos[i];  // Convierte el float actual en una secuencia de bytes
+    Serial.write(b, 4);  // Envía los 4 bytes que componen el float
+  }
+}
