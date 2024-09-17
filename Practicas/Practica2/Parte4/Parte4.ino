@@ -29,6 +29,10 @@
 
 // MACROS/CONSTANTES SENSORES
 const int potPin = A0; // PIN POTENCIOMETRO
+const float pi = 3.1416;
+const int nbias = 200;
+float bias_gyroX = 0;
+float bias_accY = 0;
 
 // MACROS CONTROLADOR
 #define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
@@ -71,6 +75,16 @@ void setup() {
   delay(100);
 
 
+  for (int i = 0; i < nbias ; i++) {
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
+    bias_gyroX += g.gyro.x;
+    bias_accY += a.acceleration.y;
+    delay(10);
+  }  
+  bias_gyroX = bias_gyroX/nbias;
+  bias_accY = bias_accY/nbias;
+
 }
 
 
@@ -80,10 +94,6 @@ void setup() {
 //                                 MAIN LOOP
 //
 //================================================================================
-float theta_g = 0;
-float theta_f = 0;
-int esPrimeraMedicion = 1;
-float alpha = 0.03;
 
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
@@ -93,11 +103,11 @@ void loop() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  theta_g = theta_f + 0.01 * g.gyro.x;
-  float theta_a = atan2(a.acceleration.y,a.acceleration.z);
+  theta_g = theta_f + 0.01 * (g.gyro.x-bias_gyroX);
+  float theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z);
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
   
-  float data[3] = {90*theta_g,90*theta_a,90*theta_f};
+  float data[3] = {theta_g,180*theta_a/pi,180*theta_f/pi};
 
   serial_sendN(data,3);
 

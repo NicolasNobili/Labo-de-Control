@@ -29,14 +29,16 @@
 
 // MACROS/CONSTANTES SENSORES
 const int potPin = A0; // PIN POTENCIOMETRO
+const float pi = 3.1416; // PI
+const int nbias = 200; // Cantidad de iteraciones para estimar el bias
+float bias_gyroX = 0; // Bias del giroscopio en X
+float bias_accY = 0; // Bias del Acelerometro en Y
 
 // MACROS CONTROLADOR
 #define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
-
-// messi
 
 
 //================================================================================
@@ -49,27 +51,38 @@ const int potPin = A0; // PIN POTENCIOMETRO
 Adafruit_MPU6050 mpu;
 
 void setup() {
-  // Configuracion comunicacion serial
+  // CONFIGURACION COMUNICACION SERIAL
+
   Serial.begin(115200);
 
-  // Configuracion IMU
-  // Try to initialize!
-  delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
-  Serial.println("Adafruit MPU6050 test!");
-
-  // Try to initialize!
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
-    }
-  }
+  // CONFIGURACION IMU
+  mpu.begin();
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
   delay(100);
-  config_servo(1000);
+
+
+  // ESTIMACION DE LOS SESGOS DE accY y gyroX
+
+  for (int i = 0; i < nbias ; i++) {
+    // Get new sensor events with the readings 
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
+
+    // Acumula las lecturas
+    bias_gyroX += g.gyro.x;
+    bias_accY += a.acceleration.y;
+
+    delay(10); // Espera 10 ms entre lecturas
+  }  
+  // Calculo el sesgo promedio
+  bias_gyroX = bias_gyroX/nbias; 
+  bias_accY = bias_accY/nbias;
+
+  // CONFIGURACION SERVO
+  config_servo(1500);
 }
 
 
@@ -79,9 +92,12 @@ void setup() {
 //                                 MAIN LOOP
 //
 //================================================================================
+float theta_g = 0; // Angulo del pendulo estimado con giroscopo
+float theta_a = 0; // Angulo del pendulo estimaod con acelerometro
+float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (este valor fija una condicion inicial!!)
+float alpha = 0.03; // Parametro del filtro complementario
 
-int contadorData = 10;
-float elapsedTime = 0;
+int contadorData = SCALER_SEND_DATA; // Cuando el contador se hace cero se envian datos a matlab
 
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
@@ -91,12 +107,17 @@ void loop() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  actualizar_servo(500);
-  delay(1000);
-  actualizar_servo(1500);
-  delay(1000),
+  // ESTIMACION ANGULO PENDULO
+  theta_g = theta_f + 0.01 * (g.gyro.x-bias_gyroX); // Se integra sobre la velocidad angular en X
+  theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
+  theta_f = theta_g *(1-alpha) + theta_a * alpha;
+
+  // Junto los datos en un array y los envio por puerto serie  
+  float data[3] = {180*theta_g/pi,180*theta_a/pi,180*theta_f/pi};
+  serial_sendN(data,3);
+
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
-  elapsedTime = micros() - startTime;
+  float elapsedTime = micros() - startTime;
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
 }
 
