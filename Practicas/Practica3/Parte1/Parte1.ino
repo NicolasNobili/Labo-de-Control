@@ -112,13 +112,18 @@ void loop() {
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
 
-  // Junto los datos en un array y los envio por puerto serie  
-  float data[3] = {180*theta_g/pi,180*theta_a/pi,180*theta_f/pi};
-  serial_sendN(data,3);
+  // Enviamos el angulo
+  float data[1] = {180*theta_f/pi};
+  serial_sendN(data,1);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
+
+  actualizar_servo(1200);
+  delay(1000);
+  actualizar_servo(1800);
+  delay(1000);
 
 }
 
