@@ -120,11 +120,6 @@ void loop() {
   float elapsedTime = micros() - startTime;
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
 
-  actualizar_servo(1200);
-  delay(1000);
-  actualizar_servo(1800);
-  delay(1000);
-
 }
 
 
