@@ -5,6 +5,7 @@ clc
 % Config:
 s = tf('s');
 
+% Bode options
 optionss=bodeoptions;
 optionss.MagVisible='on';
 optionss.PhaseMatching='on';
