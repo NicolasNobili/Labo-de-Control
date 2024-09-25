@@ -81,8 +81,6 @@ void setup() {
   bias_gyroX = bias_gyroX/nbias; 
   bias_accY = bias_accY/nbias;
 
-  // CONFIGURACION SERVO
-  config_servo(1500);
 }
 
 
@@ -114,8 +112,8 @@ void loop() {
 
   // Enviamos el angulo
   float data[1] = {180*theta_f/pi};
-  serial_sendN(data,1);
-
+  //serial_sendN(data,1);
+  Serial.println(theta_f);
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
   delayMicroseconds(CTRL_PERIOD - elapsedTime);

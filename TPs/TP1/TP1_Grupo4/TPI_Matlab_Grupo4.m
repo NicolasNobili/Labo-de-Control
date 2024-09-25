@@ -1,0 +1,321 @@
+close all
+clear variables
+clc
+
+% Config:
+s = tf('s');
+
+% Bode options
+optionss=bodeoptions;
+optionss.MagVisible='on';
+optionss.PhaseMatching='on';
+optionss.PhaseMatchingValue=-180;
+optionss.PhaseMatchingFreq=1;
+optionss.Grid='on';
+
+%%
+%{
++====================================================================
++====================================================================
++
++                           PARTE 1
++
++====================================================================
++====================================================================
+%}
+
+%Constantes:
+G = 9.8; % gravedad  [m/s^2]
+a_max = 0.4; % lado base mayor maximo [m]
+h_max = 0.9; % altura maxima [m]
+h_e = 0.45; % altura de equilibrio [m]
+b = 0.1; % lado base menor [m]
+d = 0.01065; % diametro de la valvula [m]
+Q_i = 8e-3/60; % flujo de entrada []
+
+m = (a_max - b)/h_max;
+
+%%
+%{
++==========================================
++
++                Ejercicio c
++                (Simbolico)
++==========================================
+%}
+
+% Punto de trabajo
+x_e = 0.45;
+u_e = Q_i/(pi * d^2 * sqrt(2*G*x_e)/4);
+
+% Definicion de las variables simbolicas
+orden = 1;
+x=sym('x',[orden 1],'real');
+u=sym('u','real');
+
+
+% Funcion de estado
+f = (Q_i - pi * d^2 * sqrt(2*G*x)*u/4 )/(m^2 * x^2 + 2*b*m*x + b^2);
+
+% Funcion de salida
+g = x;
+
+% Linealizacion 
+As = jacobian(f,x);
+Bs = jacobian(f,u);
+Cs = jacobian(g,x);
+Ds = jacobian(g,u);
+
+
+%{
++==========================================
++
++                Ejercicio c
++                (Numerico)
++==========================================
+%}
+
+% Calculo de las matrices reemplazando con el punto de trabajo en las
+% ecuaciones que se obtuvieron analiticamente
+
+An = - (pi*d^2*G*u_e)/(4*sqrt(2*G*x_e)*(b+m*x_e)^2);
+Bn = - ((1/4)*(pi*d^2)*sqrt(2*G*x_e))/(b+m*x_e)^2;
+Cn = 1;
+Dn = 0;
+
+%%
+%{
++==========================================
++
++                Ejercicio d
++                (Simbolico)
++==========================================
+%}
+
+
+% Se reemplaza con los valores de trabajo en las matrices simbolicas
+A = double(subs(As,{x,u},{x_e,u_e}));
+B = double(subs(Bs,{x,u},{x_e,u_e}));
+C = double(subs(Cs,{x,u},{x_e,u_e}));
+D = double(subs(Ds,{x,u},{x_e,u_e}));
+
+% Trasnferencia de la Planta Linealizada
+Ps = tf(ss(A,B,C,D));
+
+%{
++==========================================
++
++                Ejercicio d
++                (Numerico)
++==========================================
+%}
+
+% Trasnferencia de la Planta Linealizada
+Pn = Cn*Bn/(s-An);
+
+
+%%
+%{
++==========================================
++
++                Ejercicio e
++
++==========================================
+%}
+
+% Se definen los puntos de trabajo a utilizar
+x_e_bode = (0.1:0.1:0.8);
+u_e_bode = Q_i./(pi * d^2 * sqrt(2*G*x_e_bode)/4);
+
+% Se grafican todos los diagramos de bode en una misma figura
+figure();hold on
+legends = {}; % Inicializa una celda para almacenar las leyendas
+for i=1:length(x_e_bode)
+    A = double(subs(As,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    B = double(subs(Bs,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    C = double(subs(Cs,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    D = double(subs(Ds,{x,u},{x_e_bode(i),u_e_bode(i)}));
+    P_bode = tf(ss(A,B,C,D))
+    bodeplot(P_bode)
+    
+    legends{end+1} = ['x_e = ' num2str(x_e_bode(i))]; 
+end
+ax = findall(gcf,'type','axes');
+legend(ax(2),legends);
+legend(ax(3),legends);
+%%
+
+%{
++====================================================================
++====================================================================
++
++                           PARTE 2
++
++====================================================================
++====================================================================
+%}
+
+
+%{
++==========================================
++
++                Ejercicio a
++                (Simbolico)
++==========================================
+%}
+
+% Definicion del punto de trabajo
+x_e = 0.45;
+h_e = 0.45;
+u_e = Q_i/(pi * d^2 * sqrt(2*G*x_e)/4);
+
+
+A_sim = double(subs(As,{x,u},{x_e,u_e}));
+B_sim = double(subs(Bs,{x,u},{x_e,u_e}));
+C_sim = double(subs(Cs,{x,u},{x_e,u_e}));
+D_sim = double(subs(Ds,{x,u},{x_e,u_e}));
+
+
+
+%%
+%{
++==========================================
++
++                Ejercicio b
++                
++==========================================
+%}
+
+% Se define la transferencia de la planta P(s)
+P = tf(ss(A_sim,B_sim,C_sim,D_sim));;
+
+% Diseno del controlador
+P_monio = -P/s;
+k= db2mag(-0.26+8);
+C_monio = k*(s+0.00237);
+
+figure(); hold on
+legends = {'P_{monio}','L','Red Adelanto'};
+bode(P_monio);
+margin(C_monio*P_monio);
+legend(legends)
+
+% Controlador Final
+C = -C_monio/s;
+
+% Transferencias del sistema a lazo cerrado
+L = P*C;       % Transferencia de lazo
+S = 1/(1 + L); % Funcion de sensibilidad
+T = 1-S;       % Funcion de sensibilidad complementaria
+Su = T/P; 
+Si = T/C;
+
+% Diagramas de bode de las transferencias T y P
+figure(); hold on
+
+subplot(2,1,1); hold on
+legends = {'T','P'};
+bode(T);
+bode(P);
+title('Bode T y P')
+legend(legends)
+
+% Diagrama de bode de Su
+subplot(2,1,2); hold on
+bode(Su);
+legends = {'Su'};
+title('Bode Su')
+
+
+% Respuesta al escalon para dh=-0.1 de todas las funciones de transferencia
+% del sistema a lazo cerrado
+
+% Configuracion del tiempo y del escalon
+time = (0:0.01:40*60);
+opts = stepDataOptions('StepAmplitude',-0.1);
+
+% Respuesta T
+figure(); hold on
+subplot(2,2,1); hold on
+grid on;
+title('Respuesta T (-0.1)');
+[y, t] = step(T,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y + x_e);
+
+% Respuesta S
+subplot(2,2,2); hold on
+grid on;
+title('Respuesta S (-0.1)');
+[y, t] = step(S,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y);
+
+% Respuesta Su
+subplot(2,2,3); hold on
+grid on;
+title('Respuesta Su (-0.1)');
+[y, t] = step(Su,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+% Respuesta Si
+subplot(2,2,4); hold on
+grid on;
+title('Respuesta Si (-0.1)');
+[y, t] = step(Si,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+
+% Respuesta al escalon para dh=-0.1 de todas las funciones de transferencia
+% del sistema a lazo cerrado
+
+% Configuracion del tiempo y del escalon
+opts = stepDataOptions('StepAmplitude',0.1);
+time = (0:0.01:40*60);
+
+figure(); hold on
+
+% Respuesta T
+subplot(2,2,1); hold on
+grid on;
+title('Respuesta T (0.1)');
+[y, t] = step(T,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y + x_e);
+
+% Respuesta S
+subplot(2,2,2); hold on
+grid on;
+title('Respuesta S (0.1)');
+[y, t] = step(S,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+% Respuesta Su
+subplot(2,2,3); hold on
+grid on;
+title('Respuesta Su (0.1)');
+[y, t] = step(Su,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+% Respuesta Si
+subplot(2,2,4); hold on
+grid on;
+title('Respuesta Si (0.1)');
+[y, t] = step(Si,time,opts);
+t=t/60;
+xline(8,'--r','ts');
+plot(t,y+u_e);
+
+
+
