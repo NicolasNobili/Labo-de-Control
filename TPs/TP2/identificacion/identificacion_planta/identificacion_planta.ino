@@ -33,13 +33,17 @@ const float pi = 3.1416; // PI
 const int nbias = 200; // Cantidad de iteraciones para estimar el bias
 float bias_gyroX = 0; // Bias del giroscopio en X
 float bias_accY = 0; // Bias del Acelerometro en Y
+float bias_pote = 0;
 
 // MACROS CONTROLADOR
 #define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
 
+
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
 
+
+float u = 0; // Accion de control
 
 //================================================================================
 //
@@ -74,13 +78,21 @@ void setup() {
     // Acumula las lecturas
     bias_gyroX += g.gyro.x;
     bias_accY += a.acceleration.y;
+    bias_pote += leer_angulo_potenciometro(potPin);
 
     delay(10); // Espera 10 ms entre lecturas
   }  
   // Calculo el sesgo promedio
   bias_gyroX = bias_gyroX/nbias; 
   bias_accY = bias_accY/nbias;
+  bias_pote = bias_pote/nbias;
 
+  // CONFIGURACION SERVO
+  u = 0;
+  config_servo(phi_a_ton(u));
+  delay(1000);
+  u = 45
+  actualizar_servo(phi_a_ton(u));
 }
 
 
@@ -94,6 +106,8 @@ float theta_g = 0; // Angulo del pendulo estimado con giroscopo
 float theta_a = 0; // Angulo del pendulo estimaod con acelerometro
 float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (este valor fija una condicion inicial!!)
 float alpha = 0.03; // Parametro del filtro complementario
+
+float phi; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
 
 int contadorData = SCALER_SEND_DATA; // Cuando el contador se hace cero se envian datos a matlab
 
@@ -110,9 +124,12 @@ void loop() {
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
 
-  // Enviamos el angulo
-  float data[1] = {180*theta_f/pi};
-  serial_sendN(data,1);
+  // LECTURA ANGULO PHI
+  phi = leer_angulo_potenciometro(potPin) - bias_pote;
+
+  // Junto los datos en un array y los envio por puerto serie  
+  float data[4] = {u,theta_f,180*theta_f/pi,phi};
+  serial_sendN(data,4);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
@@ -186,6 +203,10 @@ void actualizar_servo(unsigned int t_on){
   OCR1AL = (ocr1a & 0xFF);
 }
 
+int phi_a_ton(float phi){
+  int ton = int(1500 + (1000/pi) * phi);
+  return ton;
+}
 
 
 //==================================================
