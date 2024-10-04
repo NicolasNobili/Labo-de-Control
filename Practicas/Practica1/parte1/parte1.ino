@@ -3,7 +3,7 @@ const int potPin = A0;
 
 void setup() {
   // Iniciar la comunicación serial
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
 void loop() {
@@ -39,10 +39,10 @@ void loop() {
   unsigned long startTime = micros();
 
   // Leer el valor analógico del potenciómetro
-  int potValue = analogRead(potPin);
+  float potValue = analogRead(potPin);
 
   // Mapear el valor del potenciómetro de 0-1023 a 0-270 grados
-  int angle = map(potValue, 0, 1023, 0, 285);
+  float angle = potValue * 285/1023;
 
   // Imprimir el valor en grados en el monitor serial
   Serial.print("Grados: ");

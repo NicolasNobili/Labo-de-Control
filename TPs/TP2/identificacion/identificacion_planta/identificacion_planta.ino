@@ -67,6 +67,10 @@ void setup() {
   mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
   delay(100);
 
+  // CONFIGURACION SERVO
+  u = 0;
+  config_servo(phi_a_ton(u));
+  delay(500)
 
   // ESTIMACION DE LOS SESGOS DE accY y gyroX
 
@@ -87,11 +91,9 @@ void setup() {
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
 
-  // CONFIGURACION SERVO
-  u = 0;
-  config_servo(phi_a_ton(u));
+  // Escalon de 45 deg en la accion de control
   delay(1000);
-  u = 45
+  u = 45;
   actualizar_servo(phi_a_ton(u));
 }
 
@@ -154,7 +156,7 @@ unsigned int leer_angulo_potenciometro(int pin){
   /*
   Se lee el valor de tension del potenciometro entre 0V y 5V
   */
-  int potValue = analogRead(pin);
+  float potValue = analogRead(pin);
   // Se tranforma la lectura en un angulo
   float angulo_pote = potValue * 285/1023;
   return angulo_pote;
