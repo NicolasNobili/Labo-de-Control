@@ -4,58 +4,24 @@ clc
 % Extraemos las mediciones de simulink
 %time = out.u.time;
 
-%u = out.u.data(:); % Accion de control
+t = out.tout(:); 
 
-%theta = out.theta.data(:); % Angulo del pendulo en deg
+u = out.u(:); % Accion de control
 
-%theta_rad = out.theta.data(:); % Angulo del pendulo en rad
+theta = out.theta(:); % Angulo del pendulo en deg
 
-% phi = out.phi.data(:); % Angulo del servo o brazo en deg
+theta_rad = out.theta_rad(:); % Angulo del pendulo en rad
 
-
-% Regresion Lineal
-
-%=====================
-%         TO DO
-%=====================
-
-
-% Trasnferencia discreta
-
-%=====================
-%         TO DO
-%=====================
-
-
-
-% Polos discretos y continuos
-
-%=====================
-%         TO DO
-%=====================
-
-
-% Armo la forma canonica del controlador de la planta
-
-%=====================
-%         TO DO
-%=====================
-
-
-% Grafico las mediciones y la respuesta teorica a condiciones iniciales
-
-%=====================
-%         TO DO
-%=====================
+phi = out.phi(:); % Angulo del servo o brazo en deg
 
 
 % Guardo los datos en archivo CSV:
 
 % Datos 
-datos = [u , theta,theta_rad , phi ];
+datos = [t, u , theta,theta_rad , phi ];
 
 % Convertir la matriz a tabla y asignar nombres a las columnas
-tabla = array2table(datos, 'VariableNames', {'u', 'theta', 'theta_rad', 'phi'});
+tabla = array2table(datos, 'VariableNames', {'t','u', 'theta', 'theta_rad', 'phi'});
 
 % Obtener la hora actual en formato 'HHMMSS'
 hora_actual = datestr(now, 'yyyymmdd_HHMMSS');

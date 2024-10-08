@@ -70,7 +70,7 @@ void setup() {
   // CONFIGURACION SERVO
   u = 0;
   config_servo(phi_a_ton(u));
-  delay(500)
+  delay(10000);
 
   // ESTIMACION DE LOS SESGOS DE accY y gyroX
 
@@ -90,11 +90,6 @@ void setup() {
   bias_gyroX = bias_gyroX/nbias; 
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
-
-  // Escalon de 45 deg en la accion de control
-  delay(1000);
-  u = 45;
-  actualizar_servo(phi_a_ton(u));
 }
 
 
@@ -112,10 +107,20 @@ float alpha = 0.03; // Parametro del filtro complementario
 float phi; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
 
 int contadorData = SCALER_SEND_DATA; // Cuando el contador se hace cero se envian datos a matlab
+int counter_step = 100;
 
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
   unsigned long startTime = micros();
+
+  if(counter_step==0){
+    // Escalon de 45 deg en la accion de control
+    u = 35;
+    actualizar_servo(phi_a_ton(u));
+  }
+  else{
+    counter_step--;
+  }
 
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
@@ -206,7 +211,7 @@ void actualizar_servo(unsigned int t_on){
 }
 
 int phi_a_ton(float phi){
-  int ton = int(1500 + (1000/pi) * phi);
+  int ton = int(1500 + (2000/180) * phi);
   return ton;
 }
 
