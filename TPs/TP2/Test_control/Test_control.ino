@@ -35,9 +35,9 @@ float bias_gyroX = 0; // Bias del giroscopio en X
 float bias_accY = 0; // Bias del Acelerometro en Y
 float bias_pote = 0;
 
-// MACROS CONTROLADOR
+// MACROS/CONSTANTES CONTROLADOR
 #define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
-
+float k = 0.5;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -105,22 +105,11 @@ float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (est
 float alpha = 0.03; // Parametro del filtro complementario
 
 float phi; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
-
-int contadorData = SCALER_SEND_DATA; // Cuando el contador se hace cero se envian datos a matlab
-int counter_step = 100;
+float e=0;
 
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
   unsigned long startTime = micros();
-
-  if(counter_step==0){
-    // Escalon de 45 deg en la accion de control
-    u = 20*pi/180;
-    actualizar_servo(phi_a_ton(u));
-  }
-  else{
-    counter_step--;
-  }
 
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
@@ -131,12 +120,10 @@ void loop() {
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
 
-  // LECTURA ANGULO PHI
-  phi = leer_angulo_potenciometro(potPin) - bias_pote;
+  e = theta_f;
+  u = k * theta_f;
+  actualizar_servo(phi_a_ton(u));
 
-  // Junto los datos en un array y los envio por puerto serie  
-  float data[3] = {u,theta_f,phi};
-  serial_sendN(data,3);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;

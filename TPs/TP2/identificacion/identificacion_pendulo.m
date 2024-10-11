@@ -1,15 +1,16 @@
 close all
+clear variables
 clc
 
 % Extraemos las mediciones de simulink
 % Extraemos las mediciones de simulink
 
 % Leer el archivo CSV como una matriz (sin encabezados)
-data = readtable('mediciones_20241006_100053.csv');
+data = readtable('mediciones_20241009_123201');
 
 % Mostrar los primeros datos
 time = data.t(240:end);
-theta = data.theta_rad(240:end)*pi/180;
+theta = data.theta(240:end);
 
 [max_theta,argmax] = max(theta);
 

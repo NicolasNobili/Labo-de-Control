@@ -10,18 +10,16 @@ u = out.u(:); % Accion de control
 
 theta = out.theta(:); % Angulo del pendulo en deg
 
-theta_rad = out.theta_rad(:); % Angulo del pendulo en rad
-
 phi = out.phi(:); % Angulo del servo o brazo en deg
 
 
 % Guardo los datos en archivo CSV:
 
 % Datos 
-datos = [t, u , theta,theta_rad , phi ];
+datos = [t, u , theta , phi ];
 
 % Convertir la matriz a tabla y asignar nombres a las columnas
-tabla = array2table(datos, 'VariableNames', {'t','u', 'theta', 'theta_rad', 'phi'});
+tabla = array2table(datos, 'VariableNames', {'t','u', 'theta', 'phi'});
 
 % Obtener la hora actual en formato 'HHMMSS'
 hora_actual = datestr(now, 'yyyymmdd_HHMMSS');

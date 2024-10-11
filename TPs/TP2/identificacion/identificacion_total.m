@@ -1,5 +1,6 @@
-clear all
+clear variable
 close all
+clc
 
 s = tf('s');
 

@@ -18,10 +18,10 @@
 
 
 // MACROS PWM SERVO
-#define CLK_FREQUENCY 16000000 // f_clock = 16MHz
-#define PWM_PERIOD_US 10000 // T=10ms ^ f=100Hz
-#define PWM_MAX_TON_US 2500 // Ton_max = 2.5ms
-#define PWM_MIN_TON_US 500 // Ton_min = 0.5ms
+#define CLK_FREQUENCY 16000000.0f // f_clock = 16MHz
+#define PWM_PERIOD_US 10000.0f // T=10ms ^ f=100Hz
+#define PWM_MAX_TON_US 2500.0f // Ton_max = 2.5ms
+#define PWM_MIN_TON_US 500.0f // Ton_min = 0.5ms
 #define TOP_PWM ((unsigned long)(CLK_FREQUENCY / 8) / (2 * 100))  // Cálculo del valor TOP para el modo Phase Correct, con un prescaler de 8
 #define MAX_OCR1A (TOP_PWM - (TOP_PWM * PWM_MIN_TON_US / PWM_PERIOD_US)) // OCR1A para Ton = 0.5ms
 #define MIN_OCR1A (TOP_PWM - (TOP_PWM * PWM_MAX_TON_US / PWM_PERIOD_US)) // OCR1A para Ton = 2.5ms
@@ -135,7 +135,7 @@ void loop() {
 //                    SENSORES
 //==================================================
 
-unsigned int leer_angulo_potenciometro(int pin){
+float leer_angulo_potenciometro(int pin){
   /*
   Se lee el valor de tension del potenciometro entre 0V y 5V
   */
@@ -188,6 +188,11 @@ void actualizar_servo(unsigned int t_on){
   OCR1AL = (ocr1a & 0xFF);
 }
 
+
+int phi_a_ton(float phi){
+  int ton = int(1500 + (2000/180) * phi);
+  return ton;
+}
 
 
 //==================================================
