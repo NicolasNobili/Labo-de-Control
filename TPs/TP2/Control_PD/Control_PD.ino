@@ -35,15 +35,23 @@ float bias_gyroX = 0; // Bias del giroscopio en X
 float bias_accY = 0; // Bias del Acelerometro en Y
 float bias_pote = 0;
 
+
+// MACROS/COSNTANTES LED
+const int pinLed = 7;
+
 // MACROS/CONSTANTES CONTROLADOR
-#define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
-float k = 0.5;
+#define CTRL_PERIOD 10000.0 // T = 10000us -> f=100Hz
+#define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
+const float u_min = -50*pi/180;
+const float u_max = 50*pi/180;
+float kp = 0;
+float ki = 0;
+float kd = 0.1;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
 
 
-float u = 0; // Accion de control
 
 //================================================================================
 //
@@ -56,9 +64,10 @@ Adafruit_MPU6050 mpu;
 
 void setup() {
   // CONFIGURACION COMUNICACION SERIAL
-
   Serial.begin(115200);
 
+  // Inicilizo el pin pinLed como output.
+  pinMode(pinLed, OUTPUT);
 
   // CONFIGURACION IMU
   mpu.begin();
@@ -68,8 +77,8 @@ void setup() {
   delay(100);
 
   // CONFIGURACION SERVO
-  u = 0;
-  config_servo(phi_a_ton(u));
+  float u_0 = 0;
+  config_servo(phi_a_ton(u_0));
   delay(10000);
 
   // ESTIMACION DE LOS SESGOS DE accY y gyroX
@@ -90,6 +99,9 @@ void setup() {
   bias_gyroX = bias_gyroX/nbias; 
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
+
+  // Prendo led para indicar que termino la rutina de calibrado
+  digitalWrite(pinLed,HIGH);
 }
 
 
@@ -105,7 +117,11 @@ float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (est
 float alpha = 0.03; // Parametro del filtro complementario
 
 float phi; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
-float e=0;
+float u = 0; // Accion de control
+float e = 0; // Error
+float e_k_1 = 0;
+float D_k = 0;
+float D_k_1= 0;
 
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
@@ -119,11 +135,21 @@ void loop() {
   theta_g = theta_f + 0.01 * (g.gyro.x-bias_gyroX); // Se integra sobre la velocidad angular en X
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
-
+  
+  // RUTINA DE CONTROL PD
   e = theta_f;
-  u = k * theta_f;
+  D_k = 2 * (e-e_k_1)/CTRL_PERIOD_S - D_k_1;
+  u = kp * e + kd * D_k;
+  // Saturador
+  if(u > u_max){
+    u = u_max;  
+  }else if(u < u_min){
+    u = u_min;
+  }
   actualizar_servo(phi_a_ton(u));
-
+  e_k_1 = e;
+  D_k_1 = D_k;
+  
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;

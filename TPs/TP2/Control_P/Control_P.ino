@@ -17,12 +17,6 @@
 //================================================================================
 
 
-// Recepcion de simulink
-typedef union{
-  float number;
-  uint8_t bytes[4];
-} FLOATUNION_t;
-
 // MACROS PWM SERVO
 #define CLK_FREQUENCY 16000000 // f_clock = 16MHz
 #define PWM_PERIOD_US 10000 // T=10ms ^ f=100Hz
@@ -41,15 +35,17 @@ float bias_gyroX = 0; // Bias del giroscopio en X
 float bias_accY = 0; // Bias del Acelerometro en Y
 float bias_pote = 0;
 
-// MACROS CONTROLADOR
-#define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
+// MACROS/COSNTANTES LED
+const int pinLed = 7;
 
+// MACROS/CONSTANTES CONTROLADOR
+#define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
+float k = 0.8;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
 
 
-float u = 0; // Accion de control
 
 //================================================================================
 //
@@ -60,15 +56,12 @@ float u = 0; // Accion de control
 // Creo una instancia de IMU MPU6050
 Adafruit_MPU6050 mpu;
 
-// Creo una instancia FLOATUNION_t para leer la altura del escalon
-FLOATUNION_t aux;
-float u_step = 0;
-
 void setup() {
   // CONFIGURACION COMUNICACION SERIAL
-
   Serial.begin(115200);
 
+  // Inicilizo el pin pinLed como output.
+  pinMode(pinLed, OUTPUT);
 
   // CONFIGURACION IMU
   mpu.begin();
@@ -78,8 +71,8 @@ void setup() {
   delay(100);
 
   // CONFIGURACION SERVO
-  u = 0;
-  config_servo(phi_a_ton(u));
+  float u_0 = 0;
+  config_servo(phi_a_ton(u_0));
   delay(10000);
 
   // ESTIMACION DE LOS SESGOS DE accY y gyroX
@@ -101,12 +94,8 @@ void setup() {
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
 
-
-  // Recibo altura del escalon de medicion
-   if (Serial.available() >= 4) {
-    aux.number = getFloat();
-    u_step = aux.number;
-  }
+  // Prendo led para indicar que termino la rutina de calibrado
+  digitalWrite(pinLed,HIGH);
 }
 
 
@@ -122,26 +111,12 @@ float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (est
 float alpha = 0.03; // Parametro del filtro complementario
 
 float phi; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
-
-int contadorData = SCALER_SEND_DATA; // Cuando el contador se hace cero se envian datos a matlab
-int counter_step = 100;
-
-
-
+float u = 0; // Accion de control
+float e = 0; // Error
 
 void loop() {
-
-
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
   unsigned long startTime = micros();
-
-  if(counter_step==0){
-    u = u_step;
-    actualizar_servo(phi_a_ton(u));
-  }
-  else{
-    counter_step--;
-  }
 
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
@@ -152,12 +127,10 @@ void loop() {
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
 
-  // LECTURA ANGULO PHI
-  phi = leer_angulo_potenciometro(potPin) - bias_pote;
+  e = theta_f;
+  u = k * e;
+  actualizar_servo(phi_a_ton(u));
 
-  // Junto los datos en un array y los envio por puerto serie  
-  float data[3] = {u,theta_f,phi};
-  serial_sendN(data,3);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
@@ -294,16 +267,4 @@ void serial_sendN(float datos[], int N) {
     byte * b = (byte *) &datos[i];  // Convierte el float actual en una secuencia de bytes
     Serial.write(b, 4);  // Envía los 4 bytes que componen el float
   }
-}
-
-
-
-float getFloat(){
-    int cont = 0;
-    FLOATUNION_t f;
-    while (cont < 4 ){
-        f.bytes[cont] = Serial.read() ;
-        cont = cont +1;
-    }
-    return f.number;
 }

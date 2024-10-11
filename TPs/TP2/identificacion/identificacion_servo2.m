@@ -41,7 +41,4 @@ figure;                            % Crear una nueva figura
 compare(data_id, sys_est);        % Comparar la salida experimental con la del modelo estimado
 title('Comparación de la salida experimental vs. el modelo estimado');  % Título de la gráfica
 
-num_servo = T_servo.Numerator{:};
-den_servo = T_servo.Denominator{:};
-
 save('servo_id','T_servo')
