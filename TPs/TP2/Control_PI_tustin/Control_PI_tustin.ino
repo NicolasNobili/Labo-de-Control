@@ -43,7 +43,7 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-float kp = 0.5;
+float kp = 0.8;
 float ki = 5;
 
 // MACROS MATLAB/SIMULINK
@@ -151,6 +151,12 @@ void loop() {
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
+  
+  
+    // Junto los datos en un array y los envio por puerto serie  
+  float data[3] = {u,theta_f,elapsedTime};
+  serial_sendN(data,3);
+  
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
 
 }
