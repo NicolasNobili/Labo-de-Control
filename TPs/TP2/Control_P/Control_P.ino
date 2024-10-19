@@ -39,8 +39,11 @@ float bias_pote = 0;
 const int pinLed = 7;
 
 // MACROS/CONSTANTES CONTROLADOR
-#define CTRL_PERIOD 10000 // T = 10000us -> f=100Hz
-float k = 0.8;
+#define CTRL_PERIOD 10000.0 // T = 10000us -> f=100Hz
+#define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
+const float u_min = -50*pi/180;
+const float u_max = 50*pi/180;
+float k = -0.8;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -126,11 +129,24 @@ void loop() {
   theta_g = theta_f + 0.01 * (g.gyro.x-bias_gyroX); // Se integra sobre la velocidad angular en X
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
-
-  e = theta_f;
+  
+  // MEDICION ANGULO BRAZO
+  phi = leer_angulo_potenciometro(potPin)  - bias_pote;
+  
+  e = -theta_f;
   u = k * e;
+  
+  // Saturador
+  if(u > u_max){
+    u = u_max;  
+  }else if(u < u_min){
+    u = u_min;
+  }
   actualizar_servo(phi_a_ton(u));
 
+  // Junto los datos en un array y los envio por puerto serie  
+  float data[3] = {u,theta_f,phi};
+  serial_sendN(data,3);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;

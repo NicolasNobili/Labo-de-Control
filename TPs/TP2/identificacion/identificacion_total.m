@@ -66,7 +66,11 @@ figure('Position', [300, 300, 800, 400]); hold on;
 plot(t_sim, theta_sim, 'DisplayName', 'Simulación: u(t) = \pi/6 h(t-1)');
 plot(time, theta, 'DisplayName', 'Medición: u(t) = \pi/6 h(t-1)');
 
+
 legend;
 grid on;
 xlabel('t [s]');
 ylabel('\theta [rad]');
+
+save('planta_id','G')
+

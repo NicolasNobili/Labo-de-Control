@@ -147,16 +147,14 @@ void loop() {
   actualizar_servo(phi_a_ton(u));
   e_k_1 = e;
   I_k_1 = I_k;
+
   
+  // Junto los datos en un array y los envio por puerto serie  
+  float data[3] = {u,theta_f,phi};
+  serial_sendN(data,3);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
-  
-  
-    // Junto los datos en un array y los envio por puerto serie  
-  float data[3] = {u,theta_f,elapsedTime};
-  serial_sendN(data,3);
-  
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
 
 }
