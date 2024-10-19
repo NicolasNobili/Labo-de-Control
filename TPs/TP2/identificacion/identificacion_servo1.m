@@ -1,7 +1,4 @@
-% Cerrar todas las figuras, limpiar las variables y la consola
-close all
-clear variables
-clc
+clear all; close all; clc;
 
 s = tf('s');
 
