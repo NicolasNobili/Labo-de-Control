@@ -16,8 +16,58 @@ my_bode_options.PhaseMatchingFreq = 1;
 my_bode_options.PhaseMatchingValue = -180;
 my_bode_options.Grid = 'on';
 
+
+%%
+close all; clc;
+% Respuesta de salida Theta ante escalon u
+% Lista de archivos CSV que contienen las mediciones
+archivos = {
+    'mediciones_20241009_123201.csv', 
+    'mediciones_20241009_123451.csv', 
+    'mediciones_20241009_130309.csv',  
+    'mediciones_20241009_130426.csv'
+};
+
+% Inicializar celda para almacenar los datos
+Data = cell(length(archivos), 1);
+
+% Leer los archivos CSV y almacenar los datos
+for i = 1:length(archivos)
+    med = readtable(archivos{i});  % Leer archivo
+    Data{i} = med;                 % Guardar en celda
+end
+
+
+
+legends = {'u(t) = \pi/6 h(t-1)','u(t) = -\pi/6 h(t-1)','u(t) = -\pi/9 h(t-1) ','u(t) = \pi/9 h(t-1)'};
+for i = 1:length(archivos)
+    t = Data{i}.t(1:end);          % Tiempo
+    u = Data{i}.u(1:end);          % Entrada
+    phi = Data{i}.phi(1:end);      % Salida
+    theta = Data{i}.theta(1:end);      % Salida
+    
+    % Definir entrada simulada (escalón)
+    u_sim = u(end) * heaviside(t - 1.03);
+    
+    % Simular la salida usando la función de transferencia
+    theta_sim = lsim(G, u_sim, t);
+    figure('Position',[300,300,800,400]); hold on;
+    % Graficar salida simulada y medida
+    plot(t(1:400), theta_sim(1:400),'LineWidth',2, 'DisplayName', ['Simulación ',': ',legends{i}]);
+    plot(t(1:400), theta(1:400),'LineWidth',1.5, 'DisplayName', ['Medición ',': ',legends{i}]);
+    
+    % Personalización de la gráfica
+    legend('Location','east');
+    grid on;
+    title('Respuesta al escalón')
+    xlabel('t [s]')
+    ylabel('\theta [rad]')
+end
+
+
 %%
 % Controlador proporcional
+close all; clc;
 
 archivos = {'impulso_Cp_20241019_162722.csv','impulso_Cp_20241019_163103'};
 data_cp = readtable(archivos{1});
@@ -33,11 +83,43 @@ figure();
 bode(L_p, my_bode_options);
 title('Bode L_p = C_p * G con k= -0.8. Control Proporcional');
 
+t = 0:0.01:10;
+figure();
+step(T_p, t)
+%%
 figure(); hold on
 theta_sim = impulse(T_p,time);
 plot(time,theta_sim,'LineWidth',1.5,'DisplayName','Simulacion Impulso');
 plot(time,theta,'LineWidth',1.5,'DisplayName','Medicion Impulso');
 title('Respuesta al impulso de T_p con k= -0.8. Control Proporcional');
+
+%%
+close all; clc;
+
+% Controlador proporcional/integral
+
+k_p = 0;
+k_i = -0.08;
+C_pi = k_p + k_i * 1/s;
+
+L_pi = C_pi * G_pade;
+T_pi = L_pi/(1+L_pi);
+% Simular la salida usando la función de transferencia
+t = 0:0.01:10;
+theta_r = 5*pi/180;
+
+% Definir entrada simulada (escalón)
+u_sim = theta_r * heaviside(t - 1);
+theta_sim_pi = lsim(T_pi, u_sim, t);
+
+figure();
+bode(L_pi, my_bode_options);
+
+figure('Position',[300,300,800,400]); hold on;
+plot(t, theta_sim_pi,'LineWidth',2, 'DisplayName', ['Simulación ']);
+
+figure();
+step(T_pi, t)
 
 %%
 % Controlador proporcional derivativo
