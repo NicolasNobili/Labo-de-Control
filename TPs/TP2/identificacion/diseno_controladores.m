@@ -84,8 +84,14 @@ bode(L_p, my_bode_options);
 title('Bode L_p = C_p * G con k= -0.8. Control Proporcional');
 
 t = 0:0.01:10;
+theta_r = 5*pi/180;
+CS = C_p/(1+L_p);
+% Definir entrada simulada (escalón)
+r_sim = theta_r * heaviside(t);
+theta_sim_p = lsim(CS, r_sim, t);
+
 figure();
-step(T_p, t)
+plot(t, theta_sim_p,'LineWidth',2, 'DisplayName', ['Simulación ']);
 %%
 figure(); hold on
 theta_sim = impulse(T_p,time);
@@ -98,8 +104,8 @@ close all; clc;
 
 % Controlador proporcional/integral
 
-k_p = 0;
-k_i = -0.08;
+k_p = -0.8;
+k_i = -5;
 C_pi = k_p + k_i * 1/s;
 
 L_pi = C_pi * G_pade;
@@ -107,10 +113,10 @@ T_pi = L_pi/(1+L_pi);
 % Simular la salida usando la función de transferencia
 t = 0:0.01:10;
 theta_r = 5*pi/180;
-
+CS = C_pi/(1+L_pi);
 % Definir entrada simulada (escalón)
-u_sim = theta_r * heaviside(t - 1);
-theta_sim_pi = lsim(T_pi, u_sim, t);
+r_sim = theta_r * heaviside(t);
+theta_sim_pi = lsim(CS, r_sim, t);
 
 figure();
 bode(L_pi, my_bode_options);
