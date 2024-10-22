@@ -44,9 +44,9 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-float kp = -0.8976;
+float kp = -0.9;
 float ki = -0;
-float kd = 0;
+float kd = -0.0325;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -140,11 +140,19 @@ void loop() {
   e = -theta_f;
   D_k = 2 * (e-e_k_1)/CTRL_PERIOD_S - D_k_1;
   u = kp * e + kd * D_k;
-
+  // Saturador
+  if(u > u_max){
+    u = u_max;  
+  }else if(u < u_min){
+    u = u_min;
+  }
   actualizar_servo(phi_a_ton(u));
   e_k_1 = e;
   D_k_1 = D_k;
-  
+
+  // Junto los datos en un array y los envio por puerto serie  
+  float data[3] = {u,theta_f,phi};
+  serial_sendN(data,3);
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;

@@ -6,6 +6,7 @@ load('planta_id');
 Ts = 0.01;
 
 G_pade = pade(G * exp(-Ts*s/2));
+
 figure(); hold on
 bode(G_pade);
 
@@ -73,25 +74,57 @@ archivos = {'impulso_Cp_20241019_162722.csv','impulso_Cp_20241019_163103'};
 data_cp = readtable(archivos{1});
 time = data_cp.t;
 theta = data_cp.theta;
-
-k = -0.8;
+rlocus(-G_nodelay);
+k = -0.4;
 C_p = k;
-L_p = C_p * G_pade;
+L_p_pade = C_p * G_pade;
+L_p_nodelay = C_p * G_nodelay;
+
+figure(); hold on;
+bode(L_p_nodelay, my_bode_options);
+title('Bode L_{p_{nodelay}} = C_p * G_{nodelay} con k= -1.12. Control Proporcional');
+bode(L_p_pade, my_bode_options);
+title('Bode L_{p_{pade}} = C_p * G_{pade} con k= -1.12. Control Proporcional');
+legend('Sistema 1', 'Sistema 2', 'Location', 'best');
+
+figure();
+bode(exp(-Td*s-Ts*s/2), my_bode_options) 
+title('Bode Retardos');
+
+L_p = C_p*G;
 T_p = L_p/(1+L_p);
+% Graficar la respuesta al impulso
 
-figure();
-bode(L_p, my_bode_options);
-title('Bode L_p = C_p * G con k= -0.8. Control Proporcional');
+% Definir el valor del impulso
+valor_impulso = - 3; % El valor que quieres en t = 0
 
-t = 0:0.01:10;
-theta_r = 5*pi/180;
-CS = C_p/(1+L_p);
-% Definir entrada simulada (escalón)
-r_sim = theta_r * heaviside(t);
-theta_sim_p = lsim(CS, r_sim, t);
+% Crear la señal de impulso
+archivo_impulso_CP = 'impulso_CP_20241022_171229.csv' ;
+data_impulso_CP = readtable(archivo_impulso_CP);
+t = data_impulso_CP.t; 
+impulso = zeros(size(t)); % Inicializar el vector con ceros
+impulso(1100:1100+10) = valor_impulso; % Asignar el valor del impulso en t = 0
 
-figure();
-plot(t, theta_sim_p,'LineWidth',2, 'DisplayName', ['Simulación ']);
+% Graficar la señal de impulso
+figure;
+stem(t, impulso, 'filled');
+xlabel('Tiempo (s)');
+ylabel('Amplitud');
+title('Impulso Definido Personalmente');
+grid on;
+
+theta_sim_p = lsim(T_p, impulso, t);
+
+figure('Position',[300,300,800,400]); hold on;
+subplot(2,1,1)
+plot(t(500:end), theta_sim_p(500:end),'LineWidth',2, 'DisplayName', ['Simulación ']);
+legend;
+subplot(2,1,2)
+plot(t(500:end), data_impulso_CP.theta(500:end), 'LineWidth',2, 'DisplayName', ['Medicion ']);
+title('Respuesta al impulso simulado y medido');
+legend;
+
+
 %%
 figure(); hold on
 theta_sim = impulse(T_p,time);
@@ -102,7 +135,7 @@ title('Respuesta al impulso de T_p con k= -0.8. Control Proporcional');
 %%
 close all; clc;
 
-% Controlador proporcional/integral
+% Controlador proporcional integral
 
 k_p = -0.8;
 k_i = -5;
@@ -116,28 +149,34 @@ theta_r = 5*pi/180;
 CS = C_pi/(1+L_pi);
 % Definir entrada simulada (escalón)
 r_sim = theta_r * heaviside(t);
-theta_sim_pi = lsim(CS, r_sim, t);
+u_sim_pi = lsim(CS, r_sim, t);
 
 figure();
 bode(L_pi, my_bode_options);
 
 figure('Position',[300,300,800,400]); hold on;
-plot(t, theta_sim_pi,'LineWidth',2, 'DisplayName', ['Simulación ']);
+plot(t, u_sim_pi,'LineWidth',2, 'DisplayName', ['Simulación ']);
+
+% Para comparar con el proporcional
+t = 0:0.01:10;
+theta_r = 5*pi/180;
+CS = C_p/(1+L_p);
+% Definir entrada simulada (escalón)
+r_sim = theta_r * heaviside(t);
+u_sim_p = lsim(CS, r_sim, t);
 
 figure();
-step(T_pi, t)
+plot(t, u_sim_p,'LineWidth',2, 'DisplayName', ['Simulación ']);
+title('Respuesta al escalon simulada');
+
 
 %%
 % Controlador proporcional derivativo
 k_p = -0.8;
 k_d = -0.1;
 C_pd = k_p + k_d * s;
-C_pd = -db2mag(-19)*(s+8);
+C_pd = -0.6*(s/8+1);
 L_pd = C_pd * G_pade;
 figure(); hold on
-bode(L_pd);
-
-
-% Tustin
-C_pd_tustin = c2d(C_pd, Ts,'tustin');
+bode(C_pd*G_pade);
 

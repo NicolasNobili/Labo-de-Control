@@ -43,8 +43,8 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-float kp = 0.8;
-float ki = 5;
+float kp = -0.8;
+float ki = -1;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -98,6 +98,9 @@ void setup() {
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
 
+  bias_gyroX = 0;
+  bias_accY = 0;
+
   // Prendo led para indicar que termino la rutina de calibrado
   digitalWrite(pinLed,HIGH);
 }
@@ -133,9 +136,12 @@ void loop() {
   theta_g = theta_f + 0.01 * (g.gyro.x-bias_gyroX); // Se integra sobre la velocidad angular en X
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
+
+  // MEDICION ANGULO BRAZO
+  phi = leer_angulo_potenciometro(potPin)  - bias_pote;
   
   // RUTINA DE CONTROL PI
-  e = theta_f;
+  e = -theta_f;
   I_k = I_k_1 + (CTRL_PERIOD_S/2)*e + (CTRL_PERIOD_S/2)*e_k_1;
   u = kp * e + ki * I_k;
   // Saturador

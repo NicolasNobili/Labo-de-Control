@@ -4,7 +4,12 @@ s = tf('s');  % Definir variable de Laplace
 Ts = 0.01;    % Tiempo de muestreo
 
 % Cargar archivos CSV con mediciones
-archivos = {'mediciones_20241009_123201.csv', 'mediciones_20241009_123451.csv', 'mediciones_20241009_130309.csv', 'mediciones_20241009_130426.csv'};
+archivos = {
+    'mediciones_20241022_145537.csv', 
+    'mediciones_20241022_150820.csv', 
+    'mediciones_20241022_150642.csv',  
+    'mediciones_20241022_145810.csv'};
+
 data = {};  % Inicializar celda para datos
 for i = 1:length(archivos)     
     data{i} = readtable(archivos{i});  % Leer y almacenar cada archivo
@@ -22,6 +27,7 @@ G_monio = T_pend * T_servo2 * s^2;
 
 % Incluir retardo Td
 Td = 0.06;
+G_nodelay = G_monio;
 G_monio = G_monio * exp(-Td * s);
 
 
@@ -37,6 +43,7 @@ for i = 1:length(archivos)
 end
 k = pinv(theta_sim) * theta;  % Calcular k
 G = k * G_monio;              % Ajustar planta con k
+G_nodelay = k * G_nodelay;
 
 % Crear sistema en espacio de estados de la Planta
 num_servo = T_servo2.numerator{:};
@@ -72,5 +79,5 @@ grid on;
 xlabel('t [s]');
 ylabel('\theta [rad]');
 
-save('planta_id','G')
+save('planta_id','G','G_nodelay', 'Td')
 

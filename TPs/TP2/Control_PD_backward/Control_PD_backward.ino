@@ -44,9 +44,9 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-float kp = 0;
-float ki = 0;
-float kd = 0.1;
+float kp = -0.9;
+float ki = -0;
+float kd = -0.0325;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -135,7 +135,7 @@ void loop() {
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
   
   // RUTINA DE CONTROL PD BACKWARD
-  e = theta_f;
+  e = -theta_f;
   u = kp * e + kd * (e - e_k_1)/CTRL_PERIOD_S;
   // Saturador
   if(u > u_max){

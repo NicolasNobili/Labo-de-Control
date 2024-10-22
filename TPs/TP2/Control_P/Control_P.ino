@@ -43,7 +43,7 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-float k = -0.8;
+float k = -0.4;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK

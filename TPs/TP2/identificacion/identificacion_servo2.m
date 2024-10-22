@@ -5,10 +5,10 @@ s = tf('s');
 
 % Lista de archivos CSV que contienen las mediciones
 archivos = {
-    'mediciones_20241009_123201.csv', 
-    'mediciones_20241009_123451.csv', 
-    'mediciones_20241009_130309.csv',  
-    'mediciones_20241009_130426.csv'
+    'mediciones_20241022_145537.csv', 
+    'mediciones_20241022_150820.csv', 
+    'mediciones_20241022_150642.csv',  
+    'mediciones_20241022_145810.csv'
 };
 
 Ts = 0.01;  % Tiempo de muestreo
@@ -32,7 +32,7 @@ for i = 1:length(archivos)
     phi = Data{i}.phi(103:end);    % Salida
 
     % Tolerancia para el tiempo de establecimiento (ejemplo: 5%)
-    tolerancia = 0.05;
+    tolerancia = 0.02;
     phi_final = phi(end);          % Valor final esperado de la salida
 
     % Índices donde la respuesta está dentro de la tolerancia
@@ -66,6 +66,7 @@ k = k / length(archivos);
 
 % Definir función de transferencia del servo
 T_servo2 = k / (s^2 - 2 * pc * s + pc^2);
+T_servo2 = k / ((s-pc)*(s-pc));
 
 % Definir las leyendas para las gráficas
 legends = {'u(t) = \pi/6 h(t-1)','u(t) = -\pi/6 h(t-1)','u(t) = -\pi/9 h(t-1) ','u(t) = \pi/9 h(t-1)'};
