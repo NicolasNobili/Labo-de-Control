@@ -75,7 +75,7 @@ data_cp = readtable(archivos{1});
 time = data_cp.t;
 theta = data_cp.theta;
 rlocus(-G_nodelay);
-k = -0.8;
+k = -0.4;
 C_p = k;
 
 L_p_pade = C_p * G_pade;
@@ -86,10 +86,10 @@ L_p = C_p*G;
 T_p = L_p/(1+L_p);
 
 figure('Position',[300,300,800,400]); hold on;
-rlocus(-G_pade);
+rlocus(G_pade);
 
 figure('Position',[300,300,800,400]); hold on;
-bode(L_p,my_bode_options);
+bode(L_p);
 
 %figure(); hold on;
 %bode(L_p_nodelay, my_bode_options);

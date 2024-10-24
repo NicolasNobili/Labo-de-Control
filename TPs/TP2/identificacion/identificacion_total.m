@@ -1,5 +1,13 @@
 clear all; close all; clc;
 
+% Configuración del Bode
+my_bode_options = bodeoptions;
+my_bode_options.PhaseMatching = 'on';
+my_bode_options.PhaseMatchingFreq = 1;
+my_bode_options.PhaseMatchingValue = -180;
+my_bode_options.Grid = 'on';
+
+
 s = tf('s');  % Definir variable de Laplace
 Ts = 0.01;    % Tiempo de muestreo
 
@@ -59,8 +67,13 @@ D = [0];
 
 planta_ss = ss(A, B, C, D);  % Sistema en espacio de estados
 
+legends = {'u(t) = \pi/6 h(t-1)','u(t) = -\pi/6 h(t-1)','u(t) = -\pi/9 h(t-1) ','u(t) = \pi/9 h(t-1)'};
+
+figure('Position',[300,300,800,400]); hold on;
 % Simulación y gráfico comparativo
-i = 1;  
+for i=1:length(data)
+subplot(2,2,i); hold on
+
 time = data{i}.t(1:end);
 u = data{i}.u(1:end);
 theta = data{i}.theta(1:end);
@@ -68,16 +81,35 @@ theta = data{i}.theta(1:end);
 u_sim = u(end) * heaviside(time - 1.0);
 [theta_sim, t_sim] = lsim(G, u_sim, time);
 
-% Graficar simulación vs mediciones
-figure('Position', [300, 300, 800, 400]); hold on;
-plot(t_sim, theta_sim, 'DisplayName', 'Simulación: u(t) = \pi/6 h(t-1)');
-plot(time, theta, 'DisplayName', 'Medición: u(t) = \pi/6 h(t-1)');
+error_po(i) = mean((theta(1:500)-theta_sim(1:500)).^2) / mean((theta(1:500)).^2) * 100;
+error_uo(i) = mean((theta(500:end)-theta_sim(500:end)).^2) / mean((theta(500:end)).^2) * 100;
 
+% Graficar simulación vs mediciones
+
+plot(t_sim, theta_sim,'LineWidth',1.5, 'DisplayName', ['Simulación:',legends{i}]);
+plot(time, theta,'LineWidth',1.5, 'DisplayName', ['Medición: ',legends{i}]);
 
 legend;
 grid on;
 xlabel('t [s]');
 ylabel('\theta [rad]');
+end
+%%
+close all
+% Diagramas de bode
+figure(); hold on
+bode(-G_nodelay,my_bode_options)
+bode(-G*exp(-Ts/2 * s),my_bode_options)
+bode(pade(-G*exp(-Ts/2 * s)),my_bode_options)
+legend('Sin retardo','Exacto', 'Aproximación Padé');
+
+figure(); hold on
+% Rango de frecuencias (rad/s)
+w = logspace(-1, 3, 1000); % De 10^-1 a 10^3 con 1000 puntos
+
+bode(exp(-(Ts/2 + Td) * s), w,my_bode_options); % Bode de la función exponencial
+bode(pade(exp(-(Ts/2 + Td) * s), 1), w,my_bode_options); % Aproximación de Padé
+legend('Exacto', 'Aproximación Padé');
 
 save('planta_id','G','G_nodelay', 'Td')
 
