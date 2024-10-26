@@ -94,6 +94,33 @@ grid on;
 xlabel('t [s]');
 ylabel('\theta [rad]');
 end
+
+
+figure('Position',[300,300,800,400]); hold on;
+% Simulación y gráfico comparativo
+for i=1:1
+time = data{i}.t(1:end);
+u = data{i}.u(1:end);
+theta = data{i}.theta(1:end);
+
+u_sim = u(end) * heaviside(time - 1.0);
+[theta_sim, t_sim] = lsim(G, u_sim, time);
+
+error_po(i) = mean((theta(1:500)-theta_sim(1:500)).^2) / mean((theta(1:500)).^2) * 100;
+error_uo(i) = mean((theta(500:end)-theta_sim(500:end)).^2) / mean((theta(500:end)).^2) * 100;
+
+% Graficar simulación vs mediciones
+
+%plot(t_sim, theta_sim,'LineWidth',1.5, 'DisplayName', ['Simulación:',legends{i}]);
+plot(time, theta,'LineWidth',1.5, 'DisplayName', ['Medición: ',legends{i}]);
+
+legend;
+grid on;
+xlabel('t [s]');
+ylabel('\theta [rad]');
+end
+
+
 %%
 close all
 % Diagramas de bode

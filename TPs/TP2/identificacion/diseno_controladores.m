@@ -74,8 +74,7 @@ archivos = {'impulso_Cp_20241019_162722.csv','impulso_Cp_20241019_163103'};
 data_cp = readtable(archivos{1});
 time = data_cp.t;
 theta = data_cp.theta;
-rlocus(-G_nodelay);
-k = -0.8;
+k = -0.4;
 C_p = k;
 
 L_p_pade = C_p * G_pade;
@@ -128,11 +127,10 @@ theta_sim_p = lsim(T_p, impulso, t);
 figure('Position',[300,300,800,400]); hold on;
 subplot(2,1,1)
 plot(t(500:end), theta_sim_p(500:end),'LineWidth',2, 'DisplayName', ['Simulación ']);
-legend;
+title('Respuesta al impulso: Medicion');
 subplot(2,1,2)
 plot(t(500:end), data_impulso_CP.theta(500:end), 'LineWidth',2, 'DisplayName', ['Medicion ']);
-title('Respuesta al impulso simulado y medido');
-legend;
+title('Respuesta al impulso: Simulacion');
 
 
 %%

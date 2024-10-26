@@ -9,10 +9,14 @@ clc
 data = readtable('mediciones_20241009_123201');
 
 % Mostrar los primeros datos
-time = data.t(240:end);
-theta = data.theta(240:end);
+time = data.t(1:end);
+theta = data.theta(1:end);
 
 [max_theta,argmax] = max(theta);
+
+time = time(argmax:end);
+theta = theta(argmax:end);
+
 
 % Calculamos los paramteros del polinomio de la transferencia discreta
 Y = theta(3:end);
@@ -36,8 +40,8 @@ sys = ss(A,B,C,D);
 
 % Grafico las mediciones y la respuesta teorica a condiciones iniciales
 figure(); hold on
-plot(time(argmax:end)-time(argmax),theta(argmax:end),'r');
-initial(sys,[max_theta;0],time(argmax:end)-time(argmax));
+plot(time(1:end)-time(1),theta(1:end),'r');
+initial(sys,[max_theta;0],time(1:end)-time(1));
 legend({'Mediciones','Respuesta teorica'})
 
 save('pendulo_id','A')
