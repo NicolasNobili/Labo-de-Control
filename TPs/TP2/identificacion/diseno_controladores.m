@@ -74,7 +74,8 @@ archivos = {'impulso_Cp_20241019_162722.csv','impulso_Cp_20241019_163103'};
 data_cp = readtable(archivos{1});
 time = data_cp.t;
 theta = data_cp.theta;
-k = -0.4;
+rlocus(-G_nodelay);
+k = -0.8;
 C_p = k;
 
 L_p_pade = C_p * G_pade;
@@ -126,65 +127,129 @@ theta_sim_p = lsim(T_p, impulso, t);
 
 figure('Position',[300,300,800,400]); hold on;
 subplot(2,1,1)
+title('Respuesta al impulso simulado');
 plot(t(500:end), theta_sim_p(500:end),'LineWidth',2, 'DisplayName', ['Simulación ']);
-title('Respuesta al impulso: Medicion');
+legend;
 subplot(2,1,2)
+title('Respuesta al impulso medido');
 plot(t(500:end), data_impulso_CP.theta(500:end), 'LineWidth',2, 'DisplayName', ['Medicion ']);
-title('Respuesta al impulso: Simulacion');
+legend;
 
 
-%%
-figure(); hold on
-theta_sim = impulse(T_p,time);
-plot(time,theta_sim,'LineWidth',1.5,'DisplayName','Simulacion Impulso');
-plot(time,theta,'LineWidth',1.5,'DisplayName','Medicion Impulso');
-title('Respuesta al impulso de T_p con k= -0.8. Control Proporcional');
 
 %%
 close all; clc;
 
 % Controlador proporcional integral
-
 k_p = -0.8;
 k_i = -5;
 C_pi = k_p + k_i * 1/s;
 
-L_pi = C_pi * G_pade;
+L_pi = C_pi * G;
 T_pi = L_pi/(1+L_pi);
-% Simular la salida usando la función de transferencia
+
+% Simulacion de la respuesta de la planta con PI al escalon de referencia 5°
 t = 0:0.01:10;
 theta_r = 5*pi/180;
-CS = C_pi/(1+L_pi);
-% Definir entrada simulada (escalón)
+T_pi = L_pi/(1+L_pi);
 r_sim = theta_r * heaviside(t);
-u_sim_pi = lsim(CS, r_sim, t);
-
+theta_sim_p = lsim(T_pi, r_sim, t);
 figure();
-bode(L_pi, my_bode_options);
+plot(t, theta_sim_p,'LineWidth',2, 'DisplayName', ['Simulación ']);
+title('Respuesta al escalón de la planta con controlador PI');
+grid on;
+xlabel('t [s]');
+ylabel('\theta [rad]');
 
+
+% Simulación de la accion de control del PI con escalon de referencia de 5°
+t = 0:0.01:20;
+theta_r = 5*pi/180;
+CS_pi = C_pi/(1+L_pi);
+r_sim = theta_r * heaviside(t);
+u_sim_pi = lsim(CS_pi, r_sim, t);
 figure('Position',[300,300,800,400]); hold on;
 plot(t, u_sim_pi,'LineWidth',2, 'DisplayName', ['Simulación ']);
 
-% Para comparar con el proporcional
-t = 0:0.01:10;
-theta_r = 5*pi/180;
-CS = C_p/(1+L_p);
-% Definir entrada simulada (escalón)
-r_sim = theta_r * heaviside(t);
-u_sim_p = lsim(CS, r_sim, t);
+recta = k_i*theta_r* t + theta_r*k_p;
+title('Respuesta al escalón del controlador PI simulada');
+grid on;
+xlabel('t [s]');
+ylabel('u [rad]');
+k
 
-figure();
-plot(t, u_sim_p,'LineWidth',2, 'DisplayName', ['Simulación ']);
-title('Respuesta al escalon simulada');
-
+%figure();
+%bode(L_pi, my_bode_options);
 
 %%
+close all;
 % Controlador proporcional derivativo
-k_p = -0.8;
-k_d = -0.1;
-C_pd = k_p + k_d * s;
-C_pd = -0.6*(s/8+1);
-L_pd = C_pd * G_pade;
-figure(); hold on
-bode(C_pd*G_pade);
+k_p = -0.4;
+k_d = -0.001;
+C_pd = k_p + k_d * s; 
+L_pd = C_pd * G;
+T_pd = L_pd /(1+L_pd);
+figure(); 
+bode(L_pd);
 
+% Definir el valor del impulso
+valor_impulso = - 3; % El valor que quieres en t = 0
+
+% Crear la señal de impulso
+archivo_impulso_CP = 'impulso_CPD_Tustin_20241024_194625.csv' ;
+data_impulso_CP_tustin = readtable(archivo_impulso_CP);
+archivo_impulso_CP = 'impulso_CPD_Tustin_20241024_194216' ;
+data_impulso_CP_backwards = readtable(archivo_impulso_CP);
+t_tustin = data_impulso_CP_tustin.t;  
+impulso_tustin = zeros(size(t_tustin)); % Inicializar el vector con ceros
+impulso_tustin(100) = valor_impulso; % Asignar el valor del impulso en t = 0
+t_backwards = data_impulso_CP_backwards.t;  
+impulso_backwards = zeros(size(t_backwards)); % Inicializar el vector con ceros
+impulso_backwards(100) = valor_impulso; % Asignar el valor del impulso en t = 0
+
+
+% Graficar la señal de impulso
+%{
+figure;
+stem(t, impulso2, 'filled');
+xlabel('Tiempo (s)');
+ylabel('Amplitud');
+title('Impulso Definido Personalmente');
+grid on;
+%}
+% Simulación de la respuesta del sistema
+impulso_sim = zeros(size(t_tustin)); % Inicializar el vector de impulso para la simulación
+impulso_sim(100) = valor_impulso; % Asignar el valor del impulso en t = 0
+
+% Calcular la respuesta simulada
+theta_sim = lsim(T_pd, impulso_sim, t_tustin);
+
+% Crear una única figura con tres subplots
+figure('Position', [300, 300, 800, 800]);
+
+% Graficar la respuesta simulada
+subplot(3, 1, 1); % Primera subtrama (Simulación)
+plot(t(1:1000), theta_sim(1:1000), 'LineWidth', 2, 'DisplayName', 'Simulación');
+xlabel('Tiempo (s)');
+ylabel('\theta [rad]');
+title('Simulación');
+legend;
+grid on;
+
+% Graficar la comparación entre simulación y medición para Backwards
+subplot(3, 1, 2); % Segunda subtrama (Simulación vs Backwards)
+plot(t(1:1000), data_impulso_CP_backwards.theta(682:1681), 'LineWidth', 2, 'DisplayName', 'Medición Backwards');
+xlabel('Tiempo (s)');
+ylabel('\theta [rad]');
+title('Medición Backwards');
+legend;
+grid on;
+
+% Graficar la comparación entre simulación y medición para Tustin
+subplot(3, 1, 3); % Tercera subtrama (Simulación vs Tustin)
+plot(t(1:1000), data_impulso_CP_tustin.theta(510:1509), 'LineWidth', 2, 'DisplayName', 'Medición Tustin');
+xlabel('Tiempo (s)');
+ylabel('\theta [rad]');
+title('Medición Tustin');
+legend;
+grid on;
