@@ -25,7 +25,7 @@ tabla = array2table(datos, 'VariableNames', {'t','u', 'theta', 'phi'});
 hora_actual = datestr(now, 'yyyymmdd_HHMMSS');
 
 % Crear el nombre del archivo con la hora del día
-nombre_archivo = ['impulso_CPD_Tustin_' hora_actual '.csv'];
+nombre_archivo = ['impulso_CPD_bacward_' hora_actual '.csv'];
 
 % Exportar la tabla a un archivo CSV con encabezados de columnas
 writetable(tabla, nombre_archivo);

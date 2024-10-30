@@ -95,13 +95,21 @@ xlabel('t [s]');
 ylabel('\theta [rad]');
 end
 
-
+%%
 figure('Position',[300,300,800,400]); hold on;
 % Simulación y gráfico comparativo
 for i=1:1
 time = data{i}.t(1:end);
 u = data{i}.u(1:end);
 theta = data{i}.theta(1:end);
+theta(101) = 0;
+theta(102) = 0;
+theta(103) = 0;
+theta(104) = 0;
+theta(105) = 0;
+theta(106) = 0;
+theta(107) = 0;
+theta(108) = -0.002;
 
 u_sim = u(end) * heaviside(time - 1.0);
 [theta_sim, t_sim] = lsim(G, u_sim, time);

@@ -185,7 +185,7 @@ k
 close all;
 % Controlador proporcional derivativo
 k_p = -0.4;
-k_d = -0.001;
+k_d = -0.01;
 C_pd = k_p + k_d * s; 
 L_pd = C_pd * G;
 T_pd = L_pd /(1+L_pd);
@@ -198,7 +198,7 @@ valor_impulso = - 3; % El valor que quieres en t = 0
 % Crear la señal de impulso
 archivo_impulso_CP = 'impulso_CPD_Tustin_20241024_194625.csv' ;
 data_impulso_CP_tustin = readtable(archivo_impulso_CP);
-archivo_impulso_CP = 'impulso_CPD_Tustin_20241024_194216' ;
+archivo_impulso_CP = 'impulso_CPD_bacward_20241026_163516.csv' ;
 data_impulso_CP_backwards = readtable(archivo_impulso_CP);
 t_tustin = data_impulso_CP_tustin.t;  
 impulso_tustin = zeros(size(t_tustin)); % Inicializar el vector con ceros

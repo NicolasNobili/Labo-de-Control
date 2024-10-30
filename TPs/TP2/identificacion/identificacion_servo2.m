@@ -32,7 +32,7 @@ for i = 1:length(archivos)
     phi = Data{i}.phi(103:end);    % Salida
 
     % Tolerancia para el tiempo de establecimiento (ejemplo: 5%)
-    tolerancia = 0.02;
+    tolerancia = 0.05;
     phi_final = phi(end);          % Valor final esperado de la salida
 
     % Índices donde la respuesta está dentro de la tolerancia

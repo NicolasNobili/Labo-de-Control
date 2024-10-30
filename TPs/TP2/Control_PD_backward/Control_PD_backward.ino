@@ -44,8 +44,8 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-float kp = -0.8;
-float kd = -0.05;
+float kp = -0.4;
+float kd = -0.1;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -133,6 +133,9 @@ void loop() {
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
   
+  // MEDICION ANGULO BRAZO
+  phi = leer_angulo_potenciometro(potPin)  - bias_pote;
+
   // RUTINA DE CONTROL PD BACKWARD
   e = -theta_f;
   u = kp * e + kd * (e - e_k_1)/CTRL_PERIOD_S;
