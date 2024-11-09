@@ -174,9 +174,14 @@ void loop() {
   phi_punto_monio_posterior = Ad[3][0] * theta_monio_actual + Ad[3][1] * theta_punto_monio_actual + Ad[3][2] * phi_monio_actual + Ad[3][3] * phi_punto_monio_actual + L[3][0] * (theta_f - theta_monio_actual) + L[3][1] * (phi - phi_monio_actual);
 
 
+  // ENVIO DE DATOS A MATLAB (comentar si no se esta haciendo ninguna prueba)
+    // Junto los datos en un array y los envio por puerto serie  
+  float data[7] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto_monio_actual};
+  serial_sendN(data,7);
+
+
   // CONTROLADOR
-  e = thete_f
-  u = k*e
+  u = k[0]*theta_monio_actual + k[1]*theta_punto_monio_actual + k[2]*phi_monio_actual + k[3] * phi_punto_monio_actual
     // Saturador
   if(u > u_max){
     u = u_max;  
@@ -184,11 +189,6 @@ void loop() {
     u = u_min;
   }
   actualizar_servo(phi_a_ton(u));
-
-  // ENVIO DE DATOS A MATLAB (comentar si no se esta haciendo ninguna prueba)
-    // Junto los datos en un array y los envio por puerto serie  
-  float data[7] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto_monio_actual};
-  serial_sendN(data,7);
 
   // Actualizacion variables del observador
   theta_monio_actual = theta_monio_posterior;

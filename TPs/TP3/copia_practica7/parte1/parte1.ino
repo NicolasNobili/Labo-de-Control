@@ -141,18 +141,20 @@ void loop() {
   theta_a = atan2((a.acceleration.y-bias_accY),a.acceleration.z); 
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
 
-  
+  // OBSERVADOR
   // Estimacion de theta y theta_punto en base a el observador de Lurenberg
   theta_monio_posterior = Ad[0][0] * theta_monio_actual + Ad[0][1] * theta_monio_punto_actual + L[0] * (theta_f - theta_monio_actual);   
   theta_monio_punto_posterior = Ad[1][0] * theta_monio_actual + Ad[1][1] * theta_monio_punto_actual + L[1] * (theta_f - theta_monio_actual);
 
-  
+  theta_monio_actual = theta_monio_posterior;
+  theta_monio_punto_actual = theta_monio_punto_posterior;
+
+
+  // ENVIO DE DATOS:
   // Junto los datos en un array y los envio por puerto serie  
   float data[4] = {theta_monio_actual, theta_f, theta_monio_punto_actual,g.gyro.x};
   serial_sendN(data,4);
 
-  theta_monio_actual = theta_monio_posterior;
-  theta_monio_punto_actual = theta_monio_punto_posterior;
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
   delayMicroseconds(CTRL_PERIOD - elapsedTime);
