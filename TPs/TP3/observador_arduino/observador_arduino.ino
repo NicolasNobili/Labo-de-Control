@@ -43,15 +43,15 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-const float k[4] = {0,0,0,0}; 
+const float k = -0.4;
 
 // MACROS/CONSTANTES OBSERVADOR
 const float L[4][2] = {
-        {1.1057, -0.4773},
-        {34.4754, -37.1127},
-        {0.6698, 0.8058},
-        {40.7524, -1.6872}
-    }; //x5
+        {0.9745, -0.1256},
+        {18.3409, -6.5490},
+        {-0.0355, 0.6620},
+        {-1.2690, -1.2647}
+    }; 
 
 // MACROS/CONSTANTES PLANTA
 
@@ -61,6 +61,8 @@ const float Ad[4][4] = {
         {0.0, 0.0, 0.9878, 0.0085},
         {0.0, 0.0, -2.3071, 0.7081}
     };
+
+const float Bd[4] = {-0.0111, -2.1005, 0.0135, 2.5800};
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -131,8 +133,11 @@ float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (est
 float alpha = 0.03; // Parametro del filtro complementario
 
 float phi = 0; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
+float phi_1 = 0; // phi anterior
+float phi_punto = 0;
 float u = 0; // Accion de control
 float e = 0; // Error
+
 
 // Estado Actual y Estado posterior (para observador y controlador)
 float theta_monio_actual = 0;
@@ -163,20 +168,20 @@ void loop() {
   theta_f = theta_g *(1-alpha) + theta_a * alpha;
 
     // Lectura angulo brazo servo
-  phi = leer_angulo_potenciometro(potPin);
+  phi = leer_angulo_potenciometro(potPin) - bias_pote;
 
 
   // OBSERVADOR
     // Estimacion de theta, theta_punto, phi y phi_punto en base a el observador de Lurenberg
-  theta_monio_posterior = Ad[0][0] * theta_monio_actual + Ad[0][1] * theta_punto_monio_actual + Ad[0][2] * phi_monio_actual + Ad[0][3] * phi_punto_monio_actual + L[0][0] * (theta_f - theta_monio_actual) + L[0][1] * (phi - phi_monio_actual);   
-  theta_punto_monio_posterior = Ad[1][0] * theta_monio_actual + Ad[1][1] * theta_punto_monio_actual + Ad[1][2] * phi_monio_actual + Ad[1][3] * phi_punto_monio_actual+ L[1][0] * (theta_f - theta_monio_actual) + L[1][1] * (phi - phi_monio_actual);
-  phi_monio_posterior = Ad[2][0] * theta_monio_actual + Ad[2][1] * theta_punto_monio_actual +  Ad[2][2] * phi_monio_actual + Ad[2][3] * phi_punto_monio_actual+ L[2][0] * (theta_f - theta_monio_actual) + L[2][1] * (phi - phi_monio_actual);
-  phi_punto_monio_posterior = Ad[3][0] * theta_monio_actual + Ad[3][1] * theta_punto_monio_actual + Ad[3][2] * phi_monio_actual + Ad[3][3] * phi_punto_monio_actual + L[3][0] * (theta_f - theta_monio_actual) + L[3][1] * (phi - phi_monio_actual);
+  theta_monio_posterior =       Ad[0][0] * theta_monio_actual + Ad[0][1] * theta_punto_monio_actual + Ad[0][2] * phi_monio_actual + Ad[0][3] * phi_punto_monio_actual + Bd[0] * u + L[0][0] * (theta_f - theta_monio_actual) + L[0][1] * (phi - phi_monio_actual);   
+  theta_punto_monio_posterior = Ad[1][0] * theta_monio_actual + Ad[1][1] * theta_punto_monio_actual + Ad[1][2] * phi_monio_actual + Ad[1][3] * phi_punto_monio_actual + Bd[1] * u + L[1][0] * (theta_f - theta_monio_actual) + L[1][1] * (phi - phi_monio_actual); 
+  phi_monio_posterior =         Ad[2][0] * theta_monio_actual + Ad[2][1] * theta_punto_monio_actual + Ad[2][2] * phi_monio_actual + Ad[2][3] * phi_punto_monio_actual + Bd[2] * u + L[2][0] * (theta_f - theta_monio_actual) + L[2][1] * (phi - phi_monio_actual); 
+  phi_punto_monio_posterior =   Ad[3][0] * theta_monio_actual + Ad[3][1] * theta_punto_monio_actual + Ad[3][2] * phi_monio_actual + Ad[3][3] * phi_punto_monio_actual + Bd[3] * u + L[3][0] * (theta_f - theta_monio_actual) + L[3][1] * (phi - phi_monio_actual); 
 
 
   // CONTROLADOR
-  e = thete_f
-  u = k*e
+  e = -theta_f;
+  u = k*e;
     // Saturador
   if(u > u_max){
     u = u_max;  
@@ -185,10 +190,13 @@ void loop() {
   }
   actualizar_servo(phi_a_ton(u));
 
+  // Estimo derivada de phi para comparar con la magnitud observada
+  phi_punto = (phi - phi_1)/CTRL_PERIOD_S;
+  phi_1 = phi;
   // ENVIO DE DATOS A MATLAB (comentar si no se esta haciendo ninguna prueba)
     // Junto los datos en un array y los envio por puerto serie  
-  float data[7] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto_monio_actual};
-  serial_sendN(data,7);
+  float data[8] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto, phi_punto_monio_actual};
+  serial_sendN(data,8);
 
   // Actualizacion variables del observador
   theta_monio_actual = theta_monio_posterior;
