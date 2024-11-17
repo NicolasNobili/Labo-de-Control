@@ -54,7 +54,6 @@ const float L[4][2] = {
     }; 
 
 // MACROS/CONSTANTES PLANTA
-
 const float Ad[4][4] = {
         {0.9969, 0.0100, 0.0099, 0.0012},
         {-0.6172, 0.9938, 1.8783, 0.2377},
@@ -206,7 +205,9 @@ void loop() {
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
-  delayMicroseconds(CTRL_PERIOD - elapsedTime);
+  if(elapsedTime < CTRL_PERIOD){
+    delayMicroseconds(CTRL_PERIOD - elapsedTime);
+  }
 }
 
 

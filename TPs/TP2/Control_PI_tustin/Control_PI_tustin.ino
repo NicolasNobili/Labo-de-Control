@@ -98,8 +98,7 @@ void setup() {
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
 
-  bias_gyroX = 0;
-  bias_accY = 0;
+
 
   // Prendo led para indicar que termino la rutina de calibrado
   digitalWrite(pinLed,HIGH);
