@@ -43,26 +43,18 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-const float k[4] = {2.7998,-0.1750,-1.7505,-0.4214}; // Q =[700 0 0 0; 0 1 0 0;0 0 100 0;0 0 0 1]; R=10
-const float f_pre[2] = {100000,2.6448};
-// const float k[4] = {2.2904  , -0.0187  , -0.3393,   -0.2841};
-// const float f_pre[2] = {100000,1.2335};
+const float k[4] = {0.7092 ,  -0.0555,    0.4071,   -0.0368}; 
+const float f_pre[2] = {100000,0.4871};
 
 
 // MACROS/CONSTANTES OBSERVADOR
 const float L[4][2] = {
-        {0.9745, -0.1256},
-        {18.3409, -6.5490},
-        {-0.0355, 0.6620},
-        {-1.2690, -1.2647}
+    {1.2837  ,  0.2766},
+    {40.6806  , 23.9644},
+    {0.0226  ,  0.9029},
+    {0.8831  ,  8.8679},
     }; 
 
-// const float L[4][2] = {
-//         {1.3407, 0.2478},
-//         {37.7091, 22.9573},
-//         {0, 0.9459},
-//         {0, 10.7023}
-//     }; 
 
 
 // MACROS/CONSTANTES PLANTA
@@ -78,7 +70,7 @@ const float Bd[4] = {-0.0111, -2.1005, 0.0135, 2.5800};
 // REFERENCIAS
 float r_theta = 0;
 float r_phi = 0;
-float step_ref = -0;
+float step_ref = 0.5;
 
 // MACROS MATLAB/SIMULINK
 #define SCALER_SEND_DATA 4 // Scaler de la frecuencia de control para enviar datos a SIMULINK
@@ -210,6 +202,7 @@ void loop() {
 
   // CONTROLADOR
   u = k[0]*theta_monio_actual + k[1]*theta_punto_monio_actual + k[2]*phi_monio_actual + k[3] * phi_punto_monio_actual + f_pre[1] * r_phi;
+
     // Saturador
   if(u > u_max){
     u = u_max;  
@@ -221,8 +214,9 @@ void loop() {
 
   // ENVIO DE DATOS A MATLAB (comentar si no se esta haciendo ninguna prueba)
     // Junto los datos en un array y los envio por puerto serie  
-  float data[7] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto_monio_actual};
-  serial_sendN(data,7);
+  float aux = 0;
+  float data[8] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto_monio_actual,aux};
+  serial_sendN(data,8);
 
 
   // Actualizacion variables del observador

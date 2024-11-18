@@ -39,34 +39,34 @@ grid on;
 imp_sim = lsim(ss_impulso, impulso, t);
 
 close all
-figure('Position',[300,300,800,400]); hold on;
-subplot(2,2,1); hold on
-title('Respuesta Impulso $\theta$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,1),'LineWidth', 2)
-subplot(2,2,3); hold on
-title('Respuesta Impulso $\theta$ : Observador', 'Interpreter', 'latex')
-plot(t, data_impulso_C.theta_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
+figure('Position',[300,300,800,350]); hold on;
+subplot(2,1,1); hold on
+title('Respuesta Impulso $\theta$ : Simulacion', 'Interpreter', 'latex','LineWidth', 2)
+plot(t, imp_sim(:,1))
+subplot(2,1,2); hold on
+title('Respuesta Impulso $\theta$ : Medicion', 'Interpreter', 'latex')
+plot(t, data_impulso_C.theta_sim)
 
-%figure('Position',[300,300,800,400]); hold on;
-subplot(2,2,2); hold on
+figure('Position',[300,300,800,400]); hold on;
+subplot(2,1,1); hold on
 title('Respuesta Impulso $\dot{\theta}$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,2),'LineWidth', 2)
-subplot(2,2,4); hold on
-title('Respuesta Impulso $\dot{\theta}$ : Observador', 'Interpreter', 'latex')
-plot(t, data_impulso_C.theta_p_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
+plot(t, imp_sim(:,2))
+subplot(2,1,2); hold on
+title('Respuesta Impulso $\dot{\theta}$ : Medicion', 'Interpreter', 'latex')
+plot(t, data_impulso_C.theta_p_sim)
 
 figure('Position',[300,300,800,400]); hold on;
-subplot(2,2,1); hold on
+subplot(2,1,1); hold on
 title('Respuesta Impulso $\phi$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,3),'LineWidth', 2)
-subplot(2,2,3); hold on
-title('Respuesta Impulso $\phi$ : Observador', 'Interpreter', 'latex')
-plot(t, data_impulso_C.phi_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
+plot(t, imp_sim(:,3))
+subplot(2,1,2); hold on
+title('Respuesta Impulso $\phi$ : Medicion', 'Interpreter', 'latex')
+plot(t, data_impulso_C.phi_sim)
 
-%figure('Position',[300,300,800,400]); hold on;
-subplot(2,2,2); hold on
+figure('Position',[300,300,800,400]); hold on;
+subplot(2,1,1); hold on
 title('Respuesta Impulso $\dot{\phi}$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,4),'LineWidth', 2)
-subplot(2,2,4); hold on
-title('Respuesta Impulso $\dot{\phi}$ : Observador', 'Interpreter', 'latex')
-plot(t, data_impulso_C.phi_p,'LineWidth', 2,'Color', [1, 0.5, 0])
+plot(t, imp_sim(:,4))
+subplot(2,1,2); hold on
+title('Respuesta Impulso $\dot{\phi}$ : Medicion', 'Interpreter', 'latex')
+plot(t, data_impulso_C.phi_p)

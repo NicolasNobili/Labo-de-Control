@@ -6,15 +6,11 @@ modelo_ss.C = [1 0 0 0; 0 0 1 0];
 modelo_ss_d = c2d(modelo_ss,Ts);
 
 
-Q =[20 0 0 0;
-    0 1 0 0;
-    0 0 20 0;
-    0 0 0 1];
-R = 1;
+plc_c = [ -5 - 7.8646i ; -5 + 7.8646i ; -10+2i; -10-2i ];
 
+plc_d = exp(plc_c * 0.01);
 
-K = -dlqr(modelo_ss_d.A, modelo_ss_d.B,Q,R)
-%K = [2.7998,-0.1750,-1.7505,-0.4214];
+K  = -place(modelo_ss_d.A , modelo_ss_d.B , plc_d);
 
 A = modelo_ss_d.A;
 B = modelo_ss_d.B;

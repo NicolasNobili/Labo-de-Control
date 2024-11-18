@@ -43,16 +43,15 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-const float k[4] = {0.7092 ,  -0.0555,    0.4071,   -0.0368}; 
+const float k = -0.4;
 
 // MACROS/CONSTANTES OBSERVADOR
 const float L[4][2] = {
-        {1.2837  ,  0.2766},
-        {40.6806  , 23.9644},
-        {0.0226  ,  0.9029},
-        {0.8831  ,  8.8679},
+        {0.9745, -0.1256},
+        {18.3409, -6.5490},
+        {-0.0355, 0.6620},
+        {-1.2690, -1.2647}
     }; 
-
 
 // MACROS/CONSTANTES PLANTA
 const float Ad[4][4] = {
@@ -65,7 +64,7 @@ const float Ad[4][4] = {
 const float Bd[4] = {-0.0111, -2.1005, 0.0135, 2.5800};
 
 // MACROS MATLAB/SIMULINK
-#define SCALER_SEND_DATA 4 // Scaler de la frecuencia de control para enviar datos a SIMULINK
+#define SCALER_SEND_DATA 4 // scaler de la frecuencia de control para enviar datos a SIMULINK
 
 
 
@@ -133,8 +132,11 @@ float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (est
 float alpha = 0.03; // Parametro del filtro complementario
 
 float phi = 0; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
+float phi_1 = 0; // phi anterior
+float phi_punto = 0;
 float u = 0; // Accion de control
 float e = 0; // Error
+
 
 // Estado Actual y Estado posterior (para observador y controlador)
 float theta_monio_actual = 0;
@@ -149,10 +151,23 @@ float phi_monio_posterior = 0;
 float phi_punto_monio_actual = 0;
 float phi_punto_monio_posterior = 0;
 
+// Delay escalon de 1s
+int counter_step = 0;
+float step_ref[4] =  {0.2,-0.2,0.4,-0.4};
 
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
   unsigned long startTime = micros();
+
+  // Delay para las respuesta al escalon:
+  if(counter_step % 1000  == 0){
+    int i = counter_step / 1000;
+    if (i < sizeof(step_ref) / sizeof(step_ref[0])) {
+        u = step_ref[i];
+    }
+  }
+
+  counter_step++;
 
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
@@ -166,8 +181,8 @@ void loop() {
 
     // Lectura angulo brazo servo
   phi = leer_angulo_potenciometro(potPin) - bias_pote;
-
-
+    //
+  actualizar_servo(phi_a_ton(u));
 
   // OBSERVADOR
     // Estimacion de theta, theta_punto, phi y phi_punto en base a el observador de Lurenberg
@@ -177,23 +192,13 @@ void loop() {
   phi_punto_monio_posterior =   Ad[3][0] * theta_monio_actual + Ad[3][1] * theta_punto_monio_actual + Ad[3][2] * phi_monio_actual + Ad[3][3] * phi_punto_monio_actual + Bd[3] * u + L[3][0] * (theta_f - theta_monio_actual) + L[3][1] * (phi - phi_monio_actual); 
 
 
-  // CONTROLADOR
-  u = k[0]*theta_monio_actual + k[1]*theta_punto_monio_actual + k[2]*phi_monio_actual + k[3] * phi_punto_monio_actual;
-    // Saturador
-  if(u > u_max){
-    u = u_max;  
-  }else if(u < u_min){
-    u = u_min;
-  }
-  actualizar_servo(phi_a_ton(u));
-
-
+  // Estimo derivada de phi para comparar con la magnitud observada
+  phi_punto = (phi - phi_1)/CTRL_PERIOD_S;
+  phi_1 = phi;
   // ENVIO DE DATOS A MATLAB (comentar si no se esta haciendo ninguna prueba)
     // Junto los datos en un array y los envio por puerto serie  
-  float aux = 0;
-  float data[8] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto_monio_actual,aux};
+  float data[8] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto, phi_punto_monio_actual};
   serial_sendN(data,8);
-
 
   // Actualizacion variables del observador
   theta_monio_actual = theta_monio_posterior;
