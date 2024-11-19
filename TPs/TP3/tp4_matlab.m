@@ -4,18 +4,28 @@ Ts = 0.01;
 load('planta_ss.mat')
 modelo_ss.C = [1 0 0 0; 0 0 1 0];
 modelo_ss_d = c2d(modelo_ss,Ts);
+%%
+%===============================================
+%
+%                 OBSERVADOR
+%
+%===============================================
 
-% OBSERVADOR:
-
-pp_c = pole(modelo_ss);
-pp_d = exp(pp_c*0.01);
-
+% Planteo los polos del observador en tiempo discreto y calculo L
+% utlizadndo place()
 po_d = [0.45, 0.4, 0.35, 0.30];
 
+% Calculo los polos continuos equivalentes teniendo en cuenta que se
+% utilizo zoh para la discretizacion.
 po_c = log(po_d)/0.01;
 
+% Calculo de L
 L = place(modelo_ss_d.A',modelo_ss_d.C',po_d)';
 
+% Se implemento el observador en la planta real y se observo como responde
+% ante una secuuencia de escalones en la entrada u. Luego se graficaron los
+% resultados obtenidos comparando la observacion con las mediciones de los
+% sensores.
 data = readtable('prueba_observador20241117_160224');
 figure(); 
 
@@ -39,21 +49,26 @@ plot(data.t, data.phi_p)
 plot(data.t, data.phi_p_sim)
 legend('$\dot{\phi}$ diferencias finitas', '$\dot{\phi}$ estimado', 'Location', 'northeast', 'Interpreter', 'latex', 'FontSize', 12) % Leyenda con fuente más grande
 
+%%
+%===============================================
+%
+%                 CONTROLADOR
+%
+%===============================================
 
-
-% CONTROLADOR:
+% Se plantean los polos deseados del sistema a lazo cerrado 
 plc_c = [ -5 - 7.8646i ; -5 + 7.8646i ; -10+2i; -10-2i ];
 
+% Se calculan los polos discretos equivalentes ('zoh') y luego se calcula
+% la matriz de realimentacion de estados utilizando place
 plc_d = exp(plc_c * 0.01);
-
 K  = -place(modelo_ss_d.A , modelo_ss_d.B , plc_d);
-
-% Simulo la respuesta al impulso del sistema
 A_des = modelo_ss_d.A+modelo_ss_d.B*K;
-
-ss_impulso = ss(A_des,modelo_ss_d.B,[1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1],0,0.01); 
+%%
+% Simulo la respuesta al impulso del sistema
+ss_impulso = ss(A_des,modelo_ss_d.B,[1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1],0,Ts); 
 % Crear la señal de impulso
-valor_impulso = -0.85
+valor_impulso = -0.85;
 archivo_impulso_C = 'impulso_controlador20241117_235500.csv' ;
 data_impulso_C = readtable(archivo_impulso_C);
 t = data_impulso_C.t; 
@@ -68,51 +83,158 @@ ylabel('Amplitud');
 title('Impulso Definido Personalmente');
 grid on;
 
-
+% Simulo la respuesta al impulso utilizando lsim() y grafico los resultados
+% para cada variable de estado junto con las mediciones.
 imp_sim = lsim(ss_impulso, impulso, t);
 
-close all
+% THETA
 figure('Position',[300,300,800,400]); hold on;
 subplot(2,2,1); hold on
 title('Respuesta Impulso $\theta$ : Simulacion', 'Interpreter', 'latex')
 plot(t, imp_sim(:,1),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\theta$(rad)','Interpreter','Latex');
+
 subplot(2,2,3); hold on
 title('Respuesta Impulso $\theta$ : Observador', 'Interpreter', 'latex')
 plot(t, data_impulso_C.theta_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
+xlabel('t(s)');
+ylabel('$\theta$(rad)','Interpreter','Latex');
 
-%figure('Position',[300,300,800,400]); hold on;
+% THETA_P
 subplot(2,2,2); hold on
 title('Respuesta Impulso $\dot{\theta}$ : Simulacion', 'Interpreter', 'latex')
 plot(t, imp_sim(:,2),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
+
 subplot(2,2,4); hold on
 title('Respuesta Impulso $\dot{\theta}$ : Observador', 'Interpreter', 'latex')
 plot(t, data_impulso_C.theta_p_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
+xlabel('t(s)');
+ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
 
+% PHI
 figure('Position',[300,300,800,400]); hold on;
 subplot(2,2,1); hold on
 title('Respuesta Impulso $\phi$ : Simulacion', 'Interpreter', 'latex')
 plot(t, imp_sim(:,3),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\phi$(rad)','Interpreter','Latex');
+
 subplot(2,2,3); hold on
 title('Respuesta Impulso $\phi$ : Observador', 'Interpreter', 'latex')
 plot(t, data_impulso_C.phi_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
+xlabel('t(s)');
+ylabel('$\phi$(rad)','Interpreter','Latex');
 
-%figure('Position',[300,300,800,400]); hold on;
+% PHI_P
 subplot(2,2,2); hold on
 title('Respuesta Impulso $\dot{\phi}$ : Simulacion', 'Interpreter', 'latex')
 plot(t, imp_sim(:,4),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
+
 subplot(2,2,4); hold on
 title('Respuesta Impulso $\dot{\phi}$ : Observador', 'Interpreter', 'latex')
 plot(t, data_impulso_C.phi_p,'LineWidth', 2,'Color', [1, 0.5, 0])
+xlabel('t(s)');
+ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
 
-
-
-
-% PRECOMPENSACION
-
+%%
+%===============================================
+%
+%                PRECOMPENSACION
+%
+%===============================================
+% Calculo la matriz F de precompensacion:
 A = modelo_ss_d.A;
 B = modelo_ss_d.B;
 C = modelo_ss_d.C;
-
 F = (C * (eye(4) -(A + B * K))^(-1) * B);
 
 f2 = 1/F(2);
+A_des = modelo_ss_d.A+modelo_ss_d.B*K;
+ss_precomp = ss(A_des,modelo_ss_d.B * (1/F),modelo_ss_d.C,0,Ts); 
+
+% Simulo respuesta al escalon para phi. r_phi corresponde a la segunda
+% entrada.
+
+% Parámetros
+T_total = 16; % Duración total de la simulación en segundos
+t = 0:Ts:T_total-Ts; % Vector de tiempo
+
+% Secuencia de escalones para las dos entradas
+r_theta = zeros(size(t));
+r_phi = zeros(size(t));
+
+% Escalones para la segunda entrada
+r_phi(t >= 0 & t < 1) = 0;
+r_phi(t >= 1 & t < 5) = pi * 30 / 180;
+r_phi(t >= 5 & t < 9) = 0;
+r_phi(t >= 9 & t < 13) = -pi * 20 / 180;
+r_phi(t >= 13 & t <= 17) = 0;
+
+% Crear la señal de entrada combinada
+R = [r_theta; r_phi]';
+
+% Simulación del sistema
+[Y, T_sim, X]  = lsim(ss_precomp, R, t);
+
+
+% THETA
+figure('Position',[300,300,800,500]); hold on;
+subplot(2,1,1); hold on
+title('Respuesta $\theta$ : Simulacion', 'Interpreter', 'latex')
+plot(t, X(:,1),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\theta$(rad)','Interpreter','Latex');
+
+subplot(2,1,2); hold on
+title('Respuesta $\theta$ : Observador', 'Interpreter', 'latex')
+% AGREGAR MEDICION
+xlabel('t(s)');
+ylabel('$\theta$(rad)','Interpreter','Latex');
+
+% THETA_P
+figure('Position',[300,300,800,500]); hold on;
+subplot(2,1,1); hold on
+title('Respuesta $\dot{\theta}$ : Simulacion', 'Interpreter', 'latex')
+plot(t, X(:,2),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
+
+subplot(2,1,2); hold on
+title('Respuesta $\dot{\theta}$ : Observador', 'Interpreter', 'latex')
+% AGREGAR MEDICION
+xlabel('t(s)');
+ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
+
+% PHI
+figure('Position',[300,300,800,400]); hold on;
+subplot(2,1,1); hold on
+title('Respuesta $\phi$ : Simulacion', 'Interpreter', 'latex')
+plot(t, X(:,3),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\phi$(rad)','Interpreter','Latex');
+
+subplot(2,1,2); hold on
+title('Respuesta $\phi$ : Observador', 'Interpreter', 'latex')
+% AGREGAR MEDICION
+xlabel('t(s)');
+ylabel('$\phi$(rad)','Interpreter','Latex');
+
+% PHI_P
+figure('Position',[300,300,800,500]); hold on;
+subplot(2,1,1); hold on
+title('Respuesta $\dot{\phi}$ : Simulacion', 'Interpreter', 'latex')
+plot(t, X(:,4),'LineWidth', 2)
+xlabel('t(s)');
+ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
+
+subplot(2,1,2); hold on
+title('Respuesta $\dot{\phi}$ : Observador', 'Interpreter', 'latex')
+% AGREGAR MEDICION
+xlabel('t(s)');
+ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
+
