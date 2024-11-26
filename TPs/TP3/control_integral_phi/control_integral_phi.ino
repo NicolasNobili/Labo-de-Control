@@ -43,8 +43,13 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-const float k[4] = {0.7092 ,  -0.0555,    0.4071,   -0.0368}; 
-const float f_pre[2] = {0,0.4871};
+
+// plc_c = [-6 - 5i ; -6 + 5i ; -8; -8.00000001 ; -15]; 
+const float k[4] = {0.6924,   -0.1675,   -0.6269 ,  -0.1681}; 
+const float h = 2.9629;
+
+// const float k[4] = {0.8245 ,  -0.1579  , -0.4427 ,  -0.1575}; 
+// const float h = 2.3608;
 
 
 // MACROS/CONSTANTES OBSERVADOR
@@ -58,13 +63,11 @@ const float f_pre[2] = {0,0.4871};
 
 
 const float L[4][2] = {
-      { 0.7907  ,  0.2478},
-      {13.9271  , 13.8198},
-      {0.0000   , 0.4959},
-      {-0.0000 ,  -2.1090}
+    {0.3450  ,  0.2478},
+    {1.6387  ,  3.1239},
+   {-0.0000  ,  0.0502},
+   {-0.0000  ,  -1.5472}
     }; 
-
-
 
 // MACROS/CONSTANTES PLANTA
 const float Ad[4][4] = {
@@ -77,7 +80,6 @@ const float Ad[4][4] = {
 const float Bd[4] = {-0.0111, -2.1005, 0.0135, 2.5800};
 
 // REFERENCIAS
-float r_theta = 0;
 float r_phi = 0;
 
 // MACROS MATLAB/SIMULINK
@@ -89,6 +91,7 @@ typedef union{
   uint8_t bytes[4];
 } FLOATUNION_t;
 
+
 //================================================================================
 //
 //                                   SETUP
@@ -97,6 +100,9 @@ typedef union{
 
 // Creo una instancia de IMU MPU6050
 Adafruit_MPU6050 mpu;
+
+// Creo una instancia FLOATUNION_t para leer la altura del escalon
+FLOATUNION_t aux;
 
 void setup() {
   // CONFIGURACION COMUNICACION SERIAL
@@ -136,8 +142,11 @@ void setup() {
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
 
-  // Prendo led para indicar que termino la rutina de calibrado
-  digitalWrite(pinLed,HIGH);
+  // // Recibo altura del escalon de medicion
+  //  if (Serial.available() >= 4) {
+  //   aux.number = getFloat();
+  //   step_ref = aux.number;
+  // }
 }
 
 
@@ -154,6 +163,7 @@ float alpha = 0.03; // Parametro del filtro complementario
 
 float phi = 0; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
 float u = 0; // Accion de control
+float e = 0; // Error
 
 // Estado Actual y Estado posterior (para observador y controlador)
 float theta_monio_actual = 0;
@@ -168,9 +178,14 @@ float phi_monio_posterior = 0;
 float phi_punto_monio_actual = 0;
 float phi_punto_monio_posterior = 0;
 
+// Estado Aumentado (para accion integral)
+float q_phi_actual = 0;
+float q_phi_posterior = 0;
+
 // Delay escalon de 4s
 int counter_step = 0;
-float step_ref[5] =  {0,0.3,0,-0.3,0};
+float step_ref[3] =  {0,0.3,-0.2};
+// float step_ref[1] =  {0};
 
 
 void loop() {
@@ -186,8 +201,6 @@ void loop() {
     }
   }
   counter_step++;
-
-
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
@@ -211,9 +224,12 @@ void loop() {
   phi_punto_monio_posterior =   Ad[3][0] * theta_monio_actual + Ad[3][1] * theta_punto_monio_actual + Ad[3][2] * phi_monio_actual + Ad[3][3] * phi_punto_monio_actual + Bd[3] * u + L[3][0] * (theta_f - theta_monio_actual) + L[3][1] * (phi - phi_monio_actual); 
 
 
-  // CONTROLADOR
-  u = k[0]*theta_monio_actual + k[1]*theta_punto_monio_actual + k[2]*phi_monio_actual + k[3] * phi_punto_monio_actual + f_pre[1] * r_phi;
+  // ESTADO AUMENTADO:
+  q_phi_posterior   = CTRL_PERIOD_S * (r_phi   -   phi_monio_actual) + q_phi_actual;
 
+
+  // CONTROLADOR
+  u = k[0]*theta_monio_actual + k[1]*theta_punto_monio_actual + k[2]*phi_monio_actual + k[3] * phi_punto_monio_actual + h * q_phi_actual;
     // Saturador
   if(u > u_max){
     u = u_max;  
@@ -230,11 +246,13 @@ void loop() {
   serial_sendN(data,8);
 
 
-  // Actualizacion variables del observador
+  // Actualizacion estado y estado aumentado:
   theta_monio_actual = theta_monio_posterior;
   theta_punto_monio_actual = theta_punto_monio_posterior;
   phi_monio_actual = phi_monio_posterior;
   phi_punto_monio_actual = phi_punto_monio_posterior;
+  q_phi_actual = q_phi_posterior;
+
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
@@ -372,4 +390,15 @@ void serial_sendN(float datos[], int N) {
     byte * b = (byte *) &datos[i];  // Convierte el float actual en una secuencia de bytes
     Serial.write(b, 4);  // Envía los 4 bytes que componen el float
   }
+}
+
+
+float getFloat(){
+    int cont = 0;
+    FLOATUNION_t f;
+    while (cont < 4 ){
+        f.bytes[cont] = Serial.read() ;
+        cont = cont +1;
+    }
+    return f.number;
 }

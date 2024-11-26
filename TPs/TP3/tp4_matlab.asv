@@ -14,15 +14,11 @@ modelo_ss_d = c2d(modelo_ss,Ts);
 % Planteo los polos del observador en tiempo discreto y calculo L
 % utlizadndo place()
 %po_d = [0.45, 0.4, 0.35, 0.30];
-%po_d = [0.6 , 0.6 , 0.8 , 0.8];
-po_c = [-20 -20 -8 -8];
-po_c = [-30 -30 -10 -10];
-po_d = exp(0.01 * po_c);
-%po_d = [0.7 , 0.7 , 0.5 , 0.5];
+po_d = [0.6 , 0.6 , 0.8 , 0.8];
 
 % Calculo los polos continuos equivalentes teniendo en cuenta que se
 % utilizo zoh para la discretizacion.
-%po_c = log(po_d)/0.01;
+po_c = log(po_d)/0.01;
 
 % Calculo de L
 L = place(modelo_ss_d.A',modelo_ss_d.C',po_d)';

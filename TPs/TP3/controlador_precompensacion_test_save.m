@@ -1,4 +1,4 @@
-1.6681close all
+close all
 clc
 
 % Extraemos las mediciones de simulink
@@ -23,22 +23,23 @@ phi_sim = phi_sim(:);
 
 phi_p = out.phi_p(1,1,:); % Velocidad angular del servo o brazo en rad/s
 phi_p = phi_p(:);
-phi_p_sim = out.phi_p(2,1,:); % Velocidad angular del servo o brazo en rad/s
-phi_p_sim = phi_p_sim(:);
+
+r_phi = out.phi_p(2,1,:); % Velocidad angular del servo o brazo en rad/s
+r_phi = r_phi(:);
 
 % Guardo los datos en archivo CSV:
 
 % Datos 
-datos = [t,theta, theta_sim, theta_p, theta_p_sim, phi, phi_sim, phi_p,phi_p_sim];
+datos = [t,theta, theta_sim, theta_p, theta_p_sim, phi, phi_sim, phi_p,r_phi];
 
 % Convertir la matriz a tabla y asignar nombres a las columnas
-tabla = array2table(datos, 'VariableNames', {'t','theta','theta_sim','theta_p','theta_p_sim', 'phi','phi_sim','phi_p','phi_p_sim'});
+tabla = array2table(datos, 'VariableNames', {'t','theta','theta_sim','theta_p','theta_p_sim', 'phi','phi_sim','phi_p','r_phi'});
 
 % Obtener la hora actual en formato 'HHMMSS'
 hora_actual = datestr(now, 'yyyymmdd_HHMMSS');
 
 % Crear el nombre del archivo con la hora del día
-nombre_archivo = ['impulso_controlador' hora_actual '.csv'];
+nombre_archivo = ['test_controlador_integral' hora_actual '.csv'];
 
 % Exportar la tabla a un archivo CSV con encabezados de columnas
 writetable(tabla, nombre_archivo);

@@ -30,7 +30,7 @@
 // MACROS/CONSTANTES SENSORES
 const int potPin = A0; // PIN POTENCIOMETRO
 const float pi = 3.1416; // PI
-const int nbias = 200; // Cantidad de iteraciones para estimar el bias
+const int nbias = 50; // Cantidad de iteraciones para estimar el bias
 float bias_gyroX = 0; // Bias del giroscopio en X
 float bias_accY = 0; // Bias del Acelerometro en Y
 float bias_pote = 0;
@@ -43,8 +43,13 @@ const int pinLed = 7;
 #define CTRL_PERIOD_S 0.01 // T = 0.01s -> f=100Hz
 const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
-const float k[4] = {0.7092 ,  -0.0555,    0.4071,   -0.0368}; 
-const float f_pre[2] = {0,0.4871};
+
+// plc_c = [-6 - 5i ; -6 + 5i ; -8; -8.00000001 ; -15]; 
+const float k[4] = {0.7075 ,  -0.1054  , -0.1948 ,  -0.1025}; 
+const float h = 2.0744;
+
+// const float k[4] = {0.6547 ,  -0.2677  , -1.3962  , -0.2776}; 
+// const float h =   4.7050 ;
 
 
 // MACROS/CONSTANTES OBSERVADOR
@@ -64,8 +69,6 @@ const float L[4][2] = {
       {-0.0000 ,  -2.1090}
     }; 
 
-
-
 // MACROS/CONSTANTES PLANTA
 const float Ad[4][4] = {
         {0.9969, 0.0100, 0.0099, 0.0012},
@@ -77,7 +80,6 @@ const float Ad[4][4] = {
 const float Bd[4] = {-0.0111, -2.1005, 0.0135, 2.5800};
 
 // REFERENCIAS
-float r_theta = 0;
 float r_phi = 0;
 
 // MACROS MATLAB/SIMULINK
@@ -89,14 +91,58 @@ typedef union{
   uint8_t bytes[4];
 } FLOATUNION_t;
 
+
 //================================================================================
 //
 //                                   SETUP
 //
 //================================================================================
 
+float theta_g = 0; // Angulo del pendulo estimado con giroscopo
+float theta_a = 0; // Angulo del pendulo estimaod con acelerometro
+float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (este valor fija una condicion inicial!!)
+float alpha = 0.03; // Parametro del filtro complementario
+
+float phi = 0; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
+float u = 0; // Accion de control
+float e_phi = 0; // Error in phi
+float e_theta = 0;
+float sum_e_phi = 0; // Sum las n_avg e_phi (last n_avg measurements)
+float sum_e_theta = 0;
+const int n_avg = 50;
+float e_phi_buffer[n_avg];
+float e_theta_buffer[n_avg]; 
+int index_buffer = 0;
+int count_buffer = 0;
+
+// Estado Actual y Estado posterior (para observador y controlador)
+float theta_monio_actual = 0;
+float theta_monio_posterior = 0;
+
+float theta_punto_monio_actual = 0;
+float theta_punto_monio_posterior = 0;
+
+float phi_monio_actual = 0;
+float phi_monio_posterior = 0;
+
+float phi_punto_monio_actual = 0;
+float phi_punto_monio_posterior = 0;
+
+// Estado Aumentado (para accion integral)
+float q_phi_actual = 0;
+float q_phi_posterior = 0;
+
+// Delay escalon de 4s
+int counter_step = 0;
+float step_ref[3] =  {0,0.3,0};
+
+
+
 // Creo una instancia de IMU MPU6050
 Adafruit_MPU6050 mpu;
+
+// Creo una instancia FLOATUNION_t para leer la altura del escalon
+FLOATUNION_t aux;
 
 void setup() {
   // CONFIGURACION COMUNICACION SERIAL
@@ -117,6 +163,13 @@ void setup() {
   config_servo(phi_a_ton(u_0));
   delay(10000);
 
+  
+  // INICIALIZAR e_buffer CON CEROS
+  for (int i = 0; i < n_avg; i++) {
+    e_phi_buffer[i] = 0;
+    e_theta_buffer[i] = 0;
+  }
+
   // ESTIMACION DE LOS SESGOS DE accY y gyroX
 
   for (int i = 0; i < nbias ; i++) {
@@ -136,8 +189,11 @@ void setup() {
   bias_accY = bias_accY/nbias;
   bias_pote = bias_pote/nbias;
 
-  // Prendo led para indicar que termino la rutina de calibrado
-  digitalWrite(pinLed,HIGH);
+  // // Recibo altura del escalon de medicion
+  //  if (Serial.available() >= 4) {
+  //   aux.number = getFloat();
+  //   step_ref = aux.number;
+  // }
 }
 
 
@@ -147,46 +203,10 @@ void setup() {
 //                                 MAIN LOOP
 //
 //================================================================================
-float theta_g = 0; // Angulo del pendulo estimado con giroscopo
-float theta_a = 0; // Angulo del pendulo estimaod con acelerometro
-float theta_f = 0; // Angulo del pendulo estimaod con filtro complementario (este valor fija una condicion inicial!!)
-float alpha = 0.03; // Parametro del filtro complementario
-
-float phi = 0; // Angulo del barzo del servo con respecto al eje x en sentido antihorario
-float u = 0; // Accion de control
-
-// Estado Actual y Estado posterior (para observador y controlador)
-float theta_monio_actual = 0;
-float theta_monio_posterior = 0;
-
-float theta_punto_monio_actual = 0;
-float theta_punto_monio_posterior = 0;
-
-float phi_monio_actual = 0;
-float phi_monio_posterior = 0;
-
-float phi_punto_monio_actual = 0;
-float phi_punto_monio_posterior = 0;
-
-// Delay escalon de 4s
-int counter_step = 0;
-float step_ref[5] =  {0,0.3,0,-0.3,0};
-
 
 void loop() {
   // Se toma el tiempo de inicio de ejecucion de la rutina de control
   unsigned long startTime = micros();
-
-
-  // Delay para las respuesta al escalon:
-  if(counter_step % 400  == 0){
-    int i = counter_step / 400;
-    if (i < sizeof(step_ref) / sizeof(step_ref[0])) {
-        r_phi = step_ref[i];
-    }
-  }
-  counter_step++;
-
 
   // Get new sensor events with the readings 
   sensors_event_t a, g, temp;
@@ -209,12 +229,57 @@ void loop() {
   theta_punto_monio_posterior = Ad[1][0] * theta_monio_actual + Ad[1][1] * theta_punto_monio_actual + Ad[1][2] * phi_monio_actual + Ad[1][3] * phi_punto_monio_actual + Bd[1] * u + L[1][0] * (theta_f - theta_monio_actual) + L[1][1] * (phi - phi_monio_actual); 
   phi_monio_posterior =         Ad[2][0] * theta_monio_actual + Ad[2][1] * theta_punto_monio_actual + Ad[2][2] * phi_monio_actual + Ad[2][3] * phi_punto_monio_actual + Bd[2] * u + L[2][0] * (theta_f - theta_monio_actual) + L[2][1] * (phi - phi_monio_actual); 
   phi_punto_monio_posterior =   Ad[3][0] * theta_monio_actual + Ad[3][1] * theta_punto_monio_actual + Ad[3][2] * phi_monio_actual + Ad[3][3] * phi_punto_monio_actual + Bd[3] * u + L[3][0] * (theta_f - theta_monio_actual) + L[3][1] * (phi - phi_monio_actual); 
+  
+  // Estado Aumentado:
+  q_phi_posterior   = CTRL_PERIOD_S * (r_phi   -   phi_monio_actual) + q_phi_actual;
+
 
 
   // CONTROLADOR
-  u = k[0]*theta_monio_actual + k[1]*theta_punto_monio_actual + k[2]*phi_monio_actual + k[3] * phi_punto_monio_actual + f_pre[1] * r_phi;
+  e_phi = (r_phi   -   phi_monio_actual);
+  e_theta = 0 - theta_monio_posterior;
 
-    // Saturador
+  sum_e_phi-= e_phi_buffer[index_buffer];
+  sum_e_theta -= e_theta_buffer[index_buffer];
+
+  e_phi_buffer[index_buffer] = abs(e_phi);
+  e_theta_buffer[index_buffer] = abs(e_theta);
+
+  sum_e_phi += abs(e_phi);
+  sum_e_theta += abs(e_theta);
+
+  index_buffer = (index_buffer + 1) % n_avg;
+
+  if (count_buffer < n_avg) {
+    count_buffer++;
+  }
+
+  float avg_e_phi = sum_e_phi / count_buffer;
+  float avg_e_theta = sum_e_theta / count_buffer;
+  float aux = 0;
+
+  // Delay para las respuesta al escalon:
+  if(counter_step % 400  == 0){
+    int i = counter_step / 400;
+    if (i < sizeof(step_ref) / sizeof(step_ref[0])) {
+        r_phi = step_ref[i];
+        float avg_e_phi = 1000;
+    }
+  }
+  counter_step++;
+
+  // if(0){
+  if(   avg_e_phi < 0.05    ){//&&   avg_e_theta < 0.    ){
+    float k2[4] = {0.2022  ,  0.0323 ,   0.8171 ,   0.0788}; 
+    float h2 = 0.0489;
+    u = k2[0]*theta_monio_actual + k2[1]*theta_punto_monio_actual + k2[2]*phi_monio_actual + k2[3] * phi_punto_monio_actual + h2 * q_phi_actual;
+    aux = 1;
+  }else{
+    // Controlador Integral: 
+    u = k[0]*theta_monio_actual + k[1]*theta_punto_monio_actual + k[2]*phi_monio_actual + k[3] * phi_punto_monio_actual + h * q_phi_actual;
+    aux=0;
+  }
+
   if(u > u_max){
     u = u_max;  
   }else if(u < u_min){
@@ -225,16 +290,19 @@ void loop() {
 
   // ENVIO DE DATOS A MATLAB (comentar si no se esta haciendo ninguna prueba)
     // Junto los datos en un array y los envio por puerto serie  
-  float aux = 0;
-  float data[8] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, phi_punto_monio_actual,r_phi};
+  // float aux = 0;
+  float data[8] = {theta_f, theta_monio_actual, g.gyro.x-bias_gyroX, theta_punto_monio_actual, phi, phi_monio_actual, u,aux};
   serial_sendN(data,8);
+  // Serial.println(avg_e_phi);
+  // Serial.println(u);
 
-
-  // Actualizacion variables del observador
+  // Actualizacion estado y estado aumentado:
   theta_monio_actual = theta_monio_posterior;
   theta_punto_monio_actual = theta_punto_monio_posterior;
   phi_monio_actual = phi_monio_posterior;
   phi_punto_monio_actual = phi_punto_monio_posterior;
+  q_phi_actual = q_phi_posterior;
+
 
   // Se calcula el tiempo transcurrido en microsegundos y se hace un delay tal para fijar la frecuencia del control digital  
   float elapsedTime = micros() - startTime;
@@ -372,4 +440,15 @@ void serial_sendN(float datos[], int N) {
     byte * b = (byte *) &datos[i];  // Convierte el float actual en una secuencia de bytes
     Serial.write(b, 4);  // Envía los 4 bytes que componen el float
   }
+}
+
+
+float getFloat(){
+    int cont = 0;
+    FLOATUNION_t f;
+    while (cont < 4 ){
+        f.bytes[cont] = Serial.read() ;
+        cont = cont +1;
+    }
+    return f.number;
 }
