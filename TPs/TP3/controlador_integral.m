@@ -49,16 +49,7 @@ D_monio_r = 0;
 planta_ss_r = ss(A_monio_r,B_monio_r,C_monio_r,D_monio_r);
 planta_ss_r_d = c2d(planta_ss_r,Ts,'zoh');
 
-% plc_c = [-6 - 5i ; -6 + 5i ; -8; -8.00000001 ; -15]; % Esta congifuracion de polos funciona,
-% test_controlador_integral_20241121_231054
-
-
-plc_c = [-7 - 3i ; -7 + 3i ; -10; -10.00000001 ; -8]; % medicion test_controlador_integral_20241121_202814
-
-
-%plc_c = [-3 - 5i ; -3 + 5i ; -7; -5.00000001 ; -40]; % medicion test_controlador_integral_20241120_123228
-
-%plc_c = [-3 - 2i ; -3 + 2i ; -5; -5.00000001 ; -10]; % medicion test_controlador_integral_20241120_123228
+plc_c = [-6 - 5i ; -6 + 5i ; -8; -8.00000001 ; -15]; 
 
 plc_d = exp(plc_c * 0.01);
 
@@ -76,7 +67,7 @@ ss_lc_integral = ss(A_des,B_des,C_des,0,Ts);
 % entrada.
 
 % Mediciones
-archivo_test= 'test_controlador_integral_20241121_202814.csv' ;
+archivo_test= 'test_controlador_integral_20241126_182649.csv' ;
 data = readtable(archivo_test);
 
 % Parámetros
@@ -170,7 +161,7 @@ ss_lc_integral_imp = ss(A_des,planta_ss_r_d.B,C_des,0,Ts);
 
 % Crear la señal de impulso
 valor_impulso = -0.85;
-archivo_impulso_C = 'impulso_controlador20241117_235500.csv' ;
+archivo_impulso_C = 'impulso_controlador_integral_20241126_183425.csv' ;
 data_impulso_C = readtable(archivo_impulso_C);
 t = data_impulso_C.t; 
 impulso = zeros(size(t)); % Inicializar el vector con ceros

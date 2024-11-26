@@ -184,8 +184,8 @@ float q_phi_posterior = 0;
 
 // Delay escalon de 4s
 int counter_step = 0;
-float step_ref[3] =  {0,0.3,-0.2};
-// float step_ref[1] =  {0};
+//float step_ref[5] =  {0,0.3,0,-0.3};
+ float step_ref[1] =  {0};
 
 
 void loop() {

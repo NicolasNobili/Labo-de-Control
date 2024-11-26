@@ -31,7 +31,7 @@ L = place(modelo_ss_d.A',modelo_ss_d.C',po_d)';
 % ante una secuuencia de escalones en la entrada u. Luego se graficaron los
 % resultados obtenidos comparando la observacion con las mediciones de los
 % sensores.
-data = readtable('prueba_observador20241117_160224');
+data = readtable('test_observador_20241126_182028');
 figure(); 
 
 subplot(4,1,1); hold on
@@ -75,7 +75,7 @@ A_des = modelo_ss_d.A+modelo_ss_d.B*K;
 ss_impulso = ss(A_des,modelo_ss_d.B,[1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1],0,Ts); 
 % Crear la señal de impulso
 valor_impulso = -0.85;
-archivo_impulso_C = 'impulso_controlador20241117_235500.csv' ;
+archivo_impulso_C = 'impulso_sontrolador_20241126_175728.csv' ;
 data_impulso_C = readtable(archivo_impulso_C);
 t = data_impulso_C.t; 
 impulso = zeros(size(t)); % Inicializar el vector con ceros
@@ -170,7 +170,7 @@ ss_precomp = ss(A_des,modelo_ss_d.B * (1/F),modelo_ss_d.C,0,Ts);
 % entrada.
 
 % Mediciones
-archivo_test= 'test_controlador_precomp_20241120_132715.csv' ;
+archivo_test= 'test_controlador_precomp_20241126_181149.csv' ;
 data = readtable(archivo_test);
 
 % Parámetros
@@ -292,7 +292,7 @@ ss_lc_integral = ss(A_des,B_des,C_des,0,Ts);
 % entrada.
 
 % Mediciones
-archivo_test= 'test_controlador_integral_20241120_123228.csv' ;
+archivo_test= 'test_controlador_integral_20241126_182649.csv' ;
 data = readtable(archivo_test);
 
 % Parámetros
