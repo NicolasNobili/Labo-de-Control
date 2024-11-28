@@ -42,7 +42,7 @@ tabla = array2table(datos, 'VariableNames', {'t','theta','theta_sim','theta_p','
 hora_actual = datestr(now, 'yyyymmdd_HHMMSS');
 
 % Crear el nombre del archivo con la hora del día
-nombre_archivo = ['test_controlador_precomp_' hora_actual '.csv'];
+nombre_archivo = ['test_controlador_integral_' hora_actual '.csv'];
 
 % Exportar la tabla a un archivo CSV con encabezados de columnas
 writetable(tabla, nombre_archivo);

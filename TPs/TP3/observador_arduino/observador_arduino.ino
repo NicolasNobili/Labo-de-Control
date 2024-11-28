@@ -47,11 +47,12 @@ const float k = -0.4;
 
 // MACROS/CONSTANTES OBSERVADOR
 const float L[4][2] = {
-    {1.2837  ,  0.2766},
-    {40.6806  , 23.9644},
-    {0.0226  ,  0.9029},
-    {0.8831  ,  8.8679},
+      {0.3450   ,   0.2478},
+      {1.6387   ,   3.1239},
+      {0.0000   ,   0.0502},
+      {0.0000   ,  -1.5472}
     }; 
+
 
 // MACROS/CONSTANTES PLANTA
 const float Ad[4][4] = {

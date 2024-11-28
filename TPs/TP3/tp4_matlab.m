@@ -15,7 +15,7 @@ modelo_ss_d = c2d(modelo_ss,Ts);
 % utlizadndo place()
 %po_d = [0.45, 0.4, 0.35, 0.30];
 %po_d = [0.6 , 0.6 , 0.8 , 0.8];
-po_c = [-20 -20 -8 -8];
+
 po_c = [-30 -30 -10 -10];
 po_d = exp(0.01 * po_c);
 %po_d = [0.7 , 0.7 , 0.5 , 0.5];
@@ -72,81 +72,71 @@ K  = -place(modelo_ss_d.A , modelo_ss_d.B , plc_d);
 A_des = modelo_ss_d.A+modelo_ss_d.B*K;
 %%
 % Simulo la respuesta al impulso del sistema
-ss_impulso = ss(A_des,modelo_ss_d.B,[1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1],0,Ts); 
-% Crear la señal de impulso
-valor_impulso = -0.85;
-archivo_impulso_C = 'impulso_sontrolador_20241126_175728.csv' ;
+ss_impulso = ss(A_des,modelo_ss_d.B,modelo_ss_d.C,0,Ts); 
+
+% Leer archivo de impulso
+archivo_impulso_C = 'impulso_controlador_20241126_175728.csv' ;
 data_impulso_C = readtable(archivo_impulso_C);
 t = data_impulso_C.t; 
-impulso = zeros(size(t)); % Inicializar el vector con ceros
-impulso(125:125+10) = valor_impulso; % Asignar el valor del impulso en t = 0
 
-% Graficar la señal de impulso
-figure;
-stem(t, impulso, 'filled');
-xlabel('Tiempo (s)');
-ylabel('Amplitud');
-title('Impulso Definido Personalmente');
-grid on;
 
-% Simulo la respuesta al impulso utilizando lsim() y grafico los resultados
-% para cada variable de estado junto con las mediciones.
-imp_sim = lsim(ss_impulso, impulso, t);
 
-% THETA
+% Simulo la respuesta al impulso utilizando initial() dando una condicion inicial
+% no nula a la velocidad angular del pendulo y grafico los resultados para 
+% cada variable de estado junto con las mediciones.
+t_0 = 1.95;
+n_pad = round(t_0/Ts);
+[Y, T_sim, X] = initial(ss_impulso, [0 4 0 0], t(end - n_pad));
+X1 = [zeros(n_pad,1);X(:,1)];  
+X2 = [zeros(n_pad,1);X(:,2)];
+X3 = [zeros(n_pad,1);X(:,3)];
+X4 = [zeros(n_pad,1);X(:,4)];
+
+
+
 figure('Position',[300,300,800,400]); hold on;
+% THETA
 subplot(2,2,1); hold on
-title('Respuesta Impulso $\theta$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,1),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\theta$(rad)','Interpreter','Latex');
-
-subplot(2,2,3); hold on
-title('Respuesta Impulso $\theta$ : Observador', 'Interpreter', 'latex')
+title('Respuesta Impulso: $\theta$', 'Interpreter', 'latex')
+plot(t, X1,'LineWidth', 2)
 plot(t, data_impulso_C.theta_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
 xlabel('t(s)');
 ylabel('$\theta$(rad)','Interpreter','Latex');
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
+
 
 % THETA_P
-subplot(2,2,2); hold on
-title('Respuesta Impulso $\dot{\theta}$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,2),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
-
-subplot(2,2,4); hold on
-title('Respuesta Impulso $\dot{\theta}$ : Observador', 'Interpreter', 'latex')
+subplot(2,2,3); hold on
+title('Respuesta Impulso: $\dot{\theta}$', 'Interpreter', 'latex')
+plot(t, X2,'LineWidth', 2)
 plot(t, data_impulso_C.theta_p_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
 xlabel('t(s)');
 ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
+
 
 % PHI
-figure('Position',[300,300,800,400]); hold on;
-subplot(2,2,1); hold on
-title('Respuesta Impulso $\phi$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,3),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\phi$(rad)','Interpreter','Latex');
-
-subplot(2,2,3); hold on
-title('Respuesta Impulso $\phi$ : Observador', 'Interpreter', 'latex')
+subplot(2,2,2); hold on
+title('Respuesta Impulso: $\phi$', 'Interpreter', 'latex')
+plot(t, X3,'LineWidth', 2)
 plot(t, data_impulso_C.phi_sim,'LineWidth', 2,'Color', [1, 0.5, 0])
 xlabel('t(s)');
 ylabel('$\phi$(rad)','Interpreter','Latex');
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
+
 
 % PHI_P
-subplot(2,2,2); hold on
-title('Respuesta Impulso $\dot{\phi}$ : Simulacion', 'Interpreter', 'latex')
-plot(t, imp_sim(:,4),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
-
 subplot(2,2,4); hold on
-title('Respuesta Impulso $\dot{\phi}$ : Observador', 'Interpreter', 'latex')
+title('Respuesta Impulso: $\dot{\phi}$', 'Interpreter', 'latex')
+plot(t, X4,'LineWidth', 2)
 plot(t, data_impulso_C.phi_p,'LineWidth', 2,'Color', [1, 0.5, 0])
 xlabel('t(s)');
 ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
-
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
 
 
 
@@ -175,204 +165,59 @@ data = readtable(archivo_test);
 
 % Parámetros
 T_total = 20; % Duración total de la simulación en segundos
-t = 0:Ts:T_total-Ts; % Vector de tiempo
-t = data.t(1:1:T_total/Ts);
+t = data.t(1:1:T_total/Ts); % Vector de tiempo
 % Secuencia de escalones para r_phi
-r_phi = zeros(size(t));
+r_phi =  data.r_phi(1:T_total/Ts);
 r_theta = zeros(size(t));
 
-% Escalones para la segunda entrada
-r_phi(t >= 0 & t < 4) = 0;
-r_phi(t >= 4 & t < 8) = 0.3;
-r_phi(t >= 8 & t < 12) = 0;
-r_phi(t >= 12 & t < 16) = -0.3;
-r_phi(t >= 16 & t <= 20) = 0;
-
 % Crear la señal de entrada combinada
-R = [r_theta, data.r_phi(1:T_total/Ts)]';
+R = [r_theta, r_phi(1:T_total/Ts)]';
 
 % Simulación del sistema
 [Y, T_sim, X]  = lsim(ss_precomp, R, t);
 
 
-% THETA
 figure('Position',[300,300,800,500]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\theta$ : Simulacion', 'Interpreter', 'latex')
+% THETA
+subplot(2,2,1); hold on
+title('Respuesta: $\theta$', 'Interpreter', 'latex')
 plot(t, X(:,1),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\theta$(rad)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\theta$ : Observador', 'Interpreter', 'latex')
 plot(t,data.theta_sim(1:T_total/Ts),'LineWidth', 2)
 xlabel('t(s)');
 ylabel('$\theta$(rad)','Interpreter','Latex');
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
 
 % THETA_P
-figure('Position',[300,300,800,500]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\dot{\theta}$ : Simulacion', 'Interpreter', 'latex')
+subplot(2,2,3); hold on
+title('Respuesta: $\dot{\theta}$', 'Interpreter', 'latex')
 plot(t, X(:,2),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\dot{\theta}$ : Observador', 'Interpreter', 'latex')
 plot(t,data.theta_p_sim(1:T_total/Ts),'LineWidth', 2)
 xlabel('t(s)');
 ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
+
 
 % PHI
-figure('Position',[300,300,800,400]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\phi$ : Simulacion', 'Interpreter', 'latex')
+subplot(2,2,2); hold on
+title('Respuesta: $\phi$', 'Interpreter', 'latex')
 plot(t, X(:,3),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\phi$(rad)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\phi$ : Observador', 'Interpreter', 'latex')
 plot(t,data.phi_sim(1:T_total/Ts),'LineWidth', 2)
 xlabel('t(s)');
 ylabel('$\phi$(rad)','Interpreter','Latex');
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
+
 
 % PHI_P
-figure('Position',[300,300,800,500]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\dot{\phi}$ : Simulacion', 'Interpreter', 'latex')
-plot(t, X(:,4),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\dot{\phi}$ : Observador', 'Interpreter', 'latex')
+subplot(2,2,4); hold on
+title('Respuesta: $\dot{\phi}$', 'Interpreter', 'latex')
+plot(t,X(:,4),'LineWidth', 2)
 plot(t,data.phi_p(1:T_total/Ts),'LineWidth', 2)
 xlabel('t(s)');
 ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
-
-
-
-%%
-%===============================================
-%
-%               CONTROL INTEGRAL
-%
-%===============================================
-
-
-A_monio_r = [modelo_ss.A,zeros(4,1);-[0 0 1 0],zeros(1,1)];
-B_monio_r = [[modelo_ss.B;zeros(1,1)],[0;0;0;0;1]];
-C_monio_r = [1 0 0 0 0; 0 0 1 0 0];
-D_monio_r = 0;
-
-planta_ss_r = ss(A_monio_r,B_monio_r,C_monio_r,D_monio_r);
-planta_ss_r_d = c2d(planta_ss_r,Ts,'zoh');
-
-plc_c = [-6 - 5i ; -6 + 5i ; -8; -8.00000001 ; -15]; % Esta congifuracion de polos funciona,
-
-
-
-plc_c = [  -2.8 - 8.2483i ;   -2.8 + 8.2483i ;   -4 + 3.0218i;   -4 - 3.0218i ; -40];
-
-
-plc_d = exp(plc_c * 0.01);
-
-K  = -place(planta_ss_r_d.A , planta_ss_r_d.B(:,1) , plc_d);
-
-% Sistema lazo cerrado:
-A_des = planta_ss_r_d.A + planta_ss_r_d.B(:,1) * K;
-B_des = planta_ss_r_d.B(:,2);
-C_des = planta_ss_r_d.C;
-
-ss_lc_integral = ss(A_des,B_des,C_des,0,Ts);
-
-%%
-% Simulo respuesta al escalon para phi. r_phi corresponde a la segunda
-% entrada.
-
-% Mediciones
-archivo_test= 'test_controlador_integral_20241126_182649.csv' ;
-data = readtable(archivo_test);
-
-% Parámetros
-T_total = 20; % Duración total de la simulación en segundos
-t = 0:Ts:T_total-Ts; % Vector de tiempo
-
-% Secuencia de escalones para r_phi
-r_phi = zeros(size(t));
-
-% Escalones para la segunda entrada
-r_phi(t >= 0 & t < 4) = 0;
-r_phi(t >= 4 & t < 8) = 0.3;
-r_phi(t >= 8 & t < 12) = 0;
-r_phi(t >= 12 & t < 16) = -0.3;
-r_phi(t >= 16 & t <= 20) = 0;
-
-
-% Simulación del sistema
-t = data.t
-[Y, T_sim, X]  = lsim(ss_lc_integral,data.r_phi,t);
-
-
-
-
-% THETA
-figure('Position',[300,300,800,500]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\theta$ : Simulacion', 'Interpreter', 'latex')
-plot(t, X(:,1),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\theta$(rad)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\theta$ : Observador', 'Interpreter', 'latex')
-plot(t,data.theta_sim,'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\theta$(rad)','Interpreter','Latex');
-
-% THETA_P
-figure('Position',[300,300,800,500]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\dot{\theta}$ : Simulacion', 'Interpreter', 'latex')
-plot(t, X(:,2),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\dot{\theta}$ : Observador', 'Interpreter', 'latex')
-plot(t,data.theta_p_sim,'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\theta}$(rad/s)','Interpreter','Latex');
-
-% PHI
-figure('Position',[300,300,800,400]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\phi$ : Simulacion', 'Interpreter', 'latex')
-plot(t, X(:,3),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\phi$(rad)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\phi$ : Observador', 'Interpreter', 'latex')
-plot(t,data.phi_sim,'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\phi$(rad)','Interpreter','Latex');
-
-% PHI_P
-figure('Position',[300,300,800,500]); hold on;
-subplot(2,1,1); hold on
-title('Respuesta $\dot{\phi}$ : Simulacion', 'Interpreter', 'latex')
-plot(t,X(:,4),'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
-
-subplot(2,1,2); hold on
-title('Respuesta $\dot{\phi}$ : Observador', 'Interpreter', 'latex')
-plot(t,data.phi_p,'LineWidth', 2)
-xlabel('t(s)');
-ylabel('$\dot{\phi}$(rad/s)','Interpreter','Latex');
-
-
+grid on;
+legend('Simulación', 'Observador', 'Location', 'best');
 
 

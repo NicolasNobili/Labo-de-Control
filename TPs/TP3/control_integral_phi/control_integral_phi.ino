@@ -45,28 +45,15 @@ const float u_min = -50*pi/180;
 const float u_max = 50*pi/180;
 
 // plc_c = [-6 - 5i ; -6 + 5i ; -8; -8.00000001 ; -15]; 
-const float k[4] = {0.6924,   -0.1675,   -0.6269 ,  -0.1681}; 
+const float k[4] = {0.6924,   -0.1675,   -0.6269 ,  -0.1681};
 const float h = 2.9629;
 
-// const float k[4] = {0.8245 ,  -0.1579  , -0.4427 ,  -0.1575}; 
-// const float h = 2.3608;
-
-
 // MACROS/CONSTANTES OBSERVADOR
-
-// const float L[4][2] = {
-//         {1.2837  ,  0.2766},
-//         {40.6806  , 23.9644},
-//         {0.0226  ,  0.9029},
-//         {0.8831  ,  8.8679},
-//     }; 
-
-
 const float L[4][2] = {
-    {0.3450  ,  0.2478},
-    {1.6387  ,  3.1239},
-   {-0.0000  ,  0.0502},
-   {-0.0000  ,  -1.5472}
+      {0.3450   ,   0.2478},
+      {1.6387   ,   3.1239},
+      {0.0000   ,   0.0502},
+      {0.0000   ,  -1.5472}
     }; 
 
 // MACROS/CONSTANTES PLANTA
@@ -183,9 +170,9 @@ float q_phi_actual = 0;
 float q_phi_posterior = 0;
 
 // Delay escalon de 4s
-int counter_step = 0;
-//float step_ref[5] =  {0,0.3,0,-0.3};
- float step_ref[1] =  {0};
+ int counter_step = 0;
+float step_ref[5] =  {0,0.3,0,-0.3,0};
+// float step_ref[1] =  {0};
 
 
 void loop() {
