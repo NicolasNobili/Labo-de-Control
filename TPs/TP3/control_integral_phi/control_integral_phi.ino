@@ -33,7 +33,7 @@ const float pi = 3.1416; // PI
 const int nbias = 200; // Cantidad de iteraciones para estimar el bias
 float bias_gyroX = 0; // Bias del giroscopio en X
 float bias_accY = 0; // Bias del Acelerometro en Y
-float bias_pote = 0;
+float bias_pote = 0; // Bias del potenciometro
 
 // MACROS/COSNTANTES LED
 const int pinLed = 7;
@@ -171,8 +171,8 @@ float q_phi_posterior = 0;
 
 // Delay escalon de 4s
  int counter_step = 0;
-float step_ref[5] =  {0,0.3,0,-0.3,0};
-// float step_ref[1] =  {0};
+// float step_ref[5] =  {0,0.3,0,-0.3,0};
+float step_ref[1] =  {0};
 
 
 void loop() {
@@ -200,7 +200,6 @@ void loop() {
 
     // Lectura angulo brazo servo
   phi = leer_angulo_potenciometro(potPin) - bias_pote;
-
 
 
   // OBSERVADOR

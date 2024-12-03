@@ -33,7 +33,7 @@ const float pi = 3.1416; // PI
 const int nbias = 200; // Cantidad de iteraciones para estimar el bias
 float bias_gyroX = 0; // Bias del giroscopio en X
 float bias_accY = 0; // Bias del Acelerometro en Y
-float bias_pote = 0;
+float bias_pote = 0; // Bias del potenciometro
 
 // MACROS/COSNTANTES LED
 const int pinLed = 7;
